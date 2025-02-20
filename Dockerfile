@@ -1,7 +1,29 @@
 #########################################
-# Build stage
+# Build frontend stage
 #########################################
-FROM golang:1.15 AS builder
+FROM node:lts-alpine AS frontend-builder
+
+# Setup env
+RUN mkdir -p /usr/src/app /var/local/html
+WORKDIR /usr/src/app
+ENV PATH /usr/src/app/node_modules/.bin:$PATH
+
+# Install dependencies
+COPY ui/package.json /usr/src/app/package.json
+COPY ui/package-lock.json /usr/src/app/package-lock.json
+RUN npm install --silent --legacy-peer-deps
+
+# Build website
+COPY ./ui /usr/src/app
+RUN npm run build
+
+# Set ownership to non-privileged user
+RUN chown -R 65532:65532 /usr/src/app/build /var/local/html
+
+#########################################
+# Build backend stage
+#########################################
+FROM golang:1.19 AS backend-builder
 
 # Repository location
 ARG REPOSITORY=github.com/ncarlier
@@ -21,7 +43,7 @@ RUN make
 #########################################
 # Distribution stage
 #########################################
-FROM gcr.io/distroless/base-debian10
+FROM gcr.io/distroless/base-debian11:nonroot
 
 # Repository location
 ARG REPOSITORY=github.com/ncarlier
@@ -29,8 +51,19 @@ ARG REPOSITORY=github.com/ncarlier
 # Artifact name
 ARG ARTIFACT=readflow
 
-# Install binary
-COPY --from=builder /go/src/$REPOSITORY/$ARTIFACT/release/$ARTIFACT /usr/local/bin/$ARTIFACT
+# Install backend binary
+COPY --from=backend-builder /go/src/$REPOSITORY/$ARTIFACT/release/$ARTIFACT /usr/local/bin/$ARTIFACT
+# Install frontend assets
+COPY --from=frontend-builder /usr/src/app/build /var/local/html
+
+# Add configuration file
+ADD ./internal/config/defaults.toml /etc/readflow.toml
+
+# Set configuration file
+ENV READFLOW_CONFIG /etc/readflow.toml
+
+# Serve UI
+ENV READFLOW_UI_DIRECTORY /var/local/html
 
 # Exposed ports
 EXPOSE 8080 9090
@@ -38,3 +71,5 @@ EXPOSE 8080 9090
 # Define entrypoint
 ENTRYPOINT [ "readflow" ]
 
+# Define command
+CMD [ "serve" ]

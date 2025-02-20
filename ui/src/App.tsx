@@ -1,19 +1,23 @@
-import { ApolloProvider } from '@apollo/client'
+import React from 'react'
 import { ConnectedRouter } from 'connected-react-router'
 import { History } from 'history'
-import React from 'react'
 import { ModalProvider } from 'react-modal-hook'
 import { Provider } from 'react-redux'
 import { Store } from 'redux'
 
-import { LocalConfigurationProvider } from './context/LocalConfigurationContext'
-import { MessageProvider } from './context/MessageContext'
-import { NavbarProvider } from './context/NavbarContext'
-import { ScrollMemoryProvider } from './context/ScrollMemoryContext'
-import { client } from './graphqlClient'
-import AppLayout from './layout/AppLayout'
+import {
+  CurrentUserProvider,
+  DeviceProvider,
+  GraphQLProvider,
+  LocalConfigurationProvider,
+  MessageProvider,
+  NavbarProvider,
+  ScrollMemoryProvider,
+} from './contexts'
+import { AppLayout } from './layout'
 import Routes from './routes'
 import { ApplicationState } from './store'
+import { AuthenticationProvider } from './auth'
 
 interface PropsFromDispatch {
   [key: string]: any
@@ -31,23 +35,29 @@ type Props = PropsFromDispatch & OwnProps
 export default function App({ store, history /*, theme*/ }: Props) {
   return (
     <Provider store={store}>
-      <ApolloProvider client={client}>
-        <LocalConfigurationProvider>
-          <ModalProvider>
-            <MessageProvider>
-              <NavbarProvider>
-                <ScrollMemoryProvider>
-                  <ConnectedRouter history={history}>
-                    <AppLayout>
-                      <Routes />
-                    </AppLayout>
-                  </ConnectedRouter>
-                </ScrollMemoryProvider>
-              </NavbarProvider>
-            </MessageProvider>
-          </ModalProvider>
-        </LocalConfigurationProvider>
-      </ApolloProvider>
+      <ConnectedRouter history={history}>
+        <AuthenticationProvider>
+          <GraphQLProvider>
+            <DeviceProvider>
+              <LocalConfigurationProvider>
+                <MessageProvider>
+                  <ModalProvider>
+                    <NavbarProvider>
+                      <ScrollMemoryProvider>
+                        <CurrentUserProvider>
+                          <AppLayout>
+                            <Routes />
+                          </AppLayout>
+                        </CurrentUserProvider>
+                      </ScrollMemoryProvider>
+                    </NavbarProvider>
+                  </ModalProvider>
+                </MessageProvider>
+              </LocalConfigurationProvider>
+            </DeviceProvider>
+          </GraphQLProvider>
+        </AuthenticationProvider>
+      </ConnectedRouter>
     </Provider>
   )
 }

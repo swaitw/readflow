@@ -7,13 +7,15 @@ interface Props {
   label: string
   required?: boolean
   readOnly?: boolean
+  pattern?: string
+  maxLength?: number
   error?: string
   children?: ReactNode
 }
 
 type AllProps = Props & Omit<BaseInputProps<any>, 'type'>
 
-export default forwardRef((props: AllProps, ref: Ref<any>) => {
+export const FormTextareaField = forwardRef((props: AllProps, ref: Ref<any>) => {
   const { error, label, children, ...rest } = { ...props, ref }
 
   const className = classNames('form-group', error ? 'has-error' : null)
@@ -25,6 +27,7 @@ export default forwardRef((props: AllProps, ref: Ref<any>) => {
         {label}
       </label>
       <i className="bar" />
+      {!!error && <><span className="helper">{error}</span><br /></>}
       {children}
     </div>
   )

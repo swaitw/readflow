@@ -1,16 +1,10 @@
-import React, { CSSProperties, FormEvent, MouseEvent, useCallback, useContext, useState } from 'react'
+import React, { CSSProperties, FormEvent, MouseEvent, useCallback, useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { useFormState } from 'react-use-form-state'
 
 import { Category } from '../../categories/models'
-import Button from '../../components/Button'
-import CategoriesOptions from '../../components/CategoriesOptions'
-import FormInputField from '../../components/FormInputField'
-import FormSelectField from '../../components/FormSelectField'
-import Loader from '../../components/Loader'
-import Panel from '../../components/Panel'
-import { MessageContext } from '../../context/MessageContext'
-import ErrorPanel from '../../error/ErrorPanel'
+import { useMessage } from '../../contexts'
+import { Button, CategoriesOptions, ErrorPanel, FormInputField, FormSelectField, Loader, Panel } from '../../components'
 import { getGQLError, isValidForm } from '../../helpers'
 import { AddNewArticleRequest, AddNewArticleResponse, Article } from '../models'
 import { AddNewArticle } from '../queries'
@@ -29,10 +23,10 @@ interface Props {
   onCancel: (e: any) => void
 }
 
-export default ({ value, category, style, onSuccess, onCancel }: Props) => {
+export const AddArticleForm = ({ value, category, style, onSuccess, onCancel }: Props) => {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const { showMessage } = useContext(MessageContext)
+  const { showMessage } = useMessage()
   const [formState, { url, select }] = useFormState<AddArticleFormFields>({
     url: value,
     category: category ? category.id : undefined,
@@ -91,7 +85,7 @@ export default ({ value, category, style, onSuccess, onCancel }: Props) => {
         </form>
       </section>
       <footer>
-        <Button title="Back to API keys" onClick={onCancel}>
+        <Button title="Cancel" onClick={onCancel}>
           Cancel
         </Button>
         <Button title="Add new article" onClick={handleOnSubmit} variant="primary">

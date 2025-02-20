@@ -1,13 +1,10 @@
 import { Article, GetArticlesRequest, GetArticlesResponse } from '../../articles/models'
 import { db } from '../db'
 
-export const saveArticle = (article: Article) => {
-  return db.transaction('rw', db.articles, async () => {
-    article.isOffline = true
-    const id = await db.articles.put(article)
-    console.log('Article put into offline storage:', id)
-    return article
-  })
+export const saveArticle = async (article: Article) => {
+  const id = await db.articles.put(article)
+  console.log('Article put into offline storage:', id)
+  return article
 }
 
 export const removeArticle = (article: Article) => {
@@ -55,7 +52,8 @@ export const getArticles = async (req: GetArticlesRequest) => {
           pageKeys.push(id)
         }
       })
-    result.articles.entries = await Promise.all<Article>(pageKeys.map((id) => table.get(id)))
+    const articles = await table.bulkGet(pageKeys)
+    result.articles.entries = articles.filter((art): art is Article => !!art)
   } else {
     let collection = table.orderBy('id')
     if (!asc) {

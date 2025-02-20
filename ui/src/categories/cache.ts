@@ -10,8 +10,8 @@ export const updateCacheAfterCreate = (
   if (!mutationResult.data) {
     return
   }
-  const created = mutationResult.data.createOrUpdateCategory
-  created.unread = 0
+  const created = { ...mutationResult.data.createOrUpdateCategory }
+  created.inbox = 0
   const previousData = proxy.readQuery<GetCategoriesResponse>({
     query: GetCategories,
   })

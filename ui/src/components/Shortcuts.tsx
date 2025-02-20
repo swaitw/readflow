@@ -2,7 +2,7 @@ import React from 'react'
 
 import styles from './Shortcuts.module.css'
 
-export default () => (
+export const Shortcuts = () => (
   <section className={styles.shortcuts}>
     <section>
       <h1>Article list</h1>
@@ -17,7 +17,7 @@ export default () => (
           Toggle sort by (if starred)<kbd>shift+b</kbd>
         </li>
         <li>
-          Mark all as read (if category or main list)<kbd>shift+m</kbd>
+          Mark all as read (if category or main list)<kbd>shift+del</kbd>
         </li>
         <li>
           Toggle history list (if category)<kbd>shift+h</kbd>
@@ -46,19 +46,31 @@ export default () => (
       <h1>Article</h1>
       <ul>
         <li>
-          Toggle read status<kbd>m</kbd>
+          Mark article as read<kbd>del</kbd>
+        </li>
+        <li>
+          Mark article as unread<kbd>ins</kbd>
+        </li>
+        <li>
+          Read article later<kbd>r</kbd>
+        </li>
+        <li>
+          Star an article<kbd>s</kbd>
+        </li>
+        <li>
+          Edit an article<kbd>e</kbd>
         </li>
         <li>
           Put article offline<kbd>o</kbd>
         </li>
         <li>
-          Remove article offline<kbd>r</kbd>
+          Delete article offline<kbd>d</kbd>
         </li>
         <li>
           Save to default archive service<kbd>shift+s</kbd>
         </li>
         <li>
-          Star an article<kbd>s</kbd>
+          Open article menu<kbd>m</kbd>
         </li>
         <li>
           Back to list<kbd>backspace</kbd>

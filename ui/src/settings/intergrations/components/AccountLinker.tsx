@@ -1,10 +1,9 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useHistory } from 'react-router-dom'
 
-import Button from '../../../components/Button'
-import Loader from '../../../components/Loader'
-import { MessageContext } from '../../../context/MessageContext'
-import fetchAPI from '../../../helpers/fetchAPI'
+import { Button, Loader } from '../../../components'
+import { useMessage } from '../../../contexts'
+import { fetchAPI } from '../../../helpers'
 
 const sessionStoragePrefix = 'readflow.accountLinker'
 
@@ -34,9 +33,9 @@ interface Props {
   provider: 'pocket'
 }
 
-export default ({ provider }: Props) => {
+export const AccountLinker = ({ provider }: Props) => {
   const [loading, setLoading] = useState(false)
-  const { showErrorMessage } = useContext(MessageContext)
+  const { showErrorMessage } = useMessage()
   const history = useHistory()
 
   const linkAuthorize = useCallback(
@@ -50,7 +49,7 @@ export default ({ provider }: Props) => {
         } else {
           throw new Error(res.statusText)
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err.message)
       } finally {
         storeData(provider, null)
@@ -74,7 +73,6 @@ export default ({ provider }: Props) => {
     let data: any
     try {
       const params = {
-        // eslint-disable-next-line @typescript-eslint/camelcase
         redirect_uri: document.location.origin + document.location.pathname + '?' + qs.toString(),
       }
       const res = await fetchAPI(`/linking/${provider}/request`, params, { method: 'GET' })
@@ -85,7 +83,7 @@ export default ({ provider }: Props) => {
         const err = await res.json()
         throw new Error(err.detail || res.statusText)
       }
-    } catch (err) {
+    } catch (err: any) {
       showErrorMessage(err.message)
       setLoading(false)
     }

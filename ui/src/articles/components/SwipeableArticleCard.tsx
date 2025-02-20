@@ -1,14 +1,13 @@
-import React, { useCallback, useContext } from 'react'
+import React, { useCallback } from 'react'
 import { useMutation } from '@apollo/client'
 
-import Icon from '../../components/Icon'
-import SwipeableListItem from '../../components/SwipeableListItem'
-import { MessageContext } from '../../context/MessageContext'
+import { Icon, SwipeableListItem } from '../../components'
+import { useMessage } from '../../contexts'
 import { getGQLError } from '../../helpers'
 import { updateCacheAfterUpdate } from '../cache'
 import { Article, ArticleStatus, UpdateArticleRequest, UpdateArticleResponse } from '../models'
 import { UpdateArticle } from '../queries'
-import ArticleCard from './ArticleCard'
+import { ArticleCard } from '.'
 import styles from './SwipeableArticleCard.module.css'
 
 interface Props {
@@ -21,10 +20,10 @@ const Background = ({ icon }: { icon: string }) => (
   </div>
 )
 
-export default (props: Props) => {
+export const SwipeableArticleCard = (props: Props) => {
   const { article } = props
 
-  const { showErrorMessage } = useContext(MessageContext)
+  const { showErrorMessage } = useMessage()
   const [updateArticleMutation] = useMutation<UpdateArticleResponse, UpdateArticleRequest>(UpdateArticle)
 
   const updateArticleStatus = useCallback(
@@ -41,15 +40,15 @@ export default (props: Props) => {
     [updateArticleMutation, article, showErrorMessage]
   )
 
-  const handleOnDelete = useCallback(() => {
-    const status = article.status === 'read' ? 'unread' : 'read'
+  const handleOnSwipe = useCallback(() => {
+    const status = article.status === 'read' ? 'inbox' : 'read'
     updateArticleStatus(status)
   }, [article, updateArticleStatus])
 
   const bgIcon = article.status === 'read' ? 'undo' : 'done'
 
   return (
-    <SwipeableListItem background={<Background icon={bgIcon} />} onSwipe={handleOnDelete}>
+    <SwipeableListItem background={<Background icon={bgIcon} />} onSwipe={handleOnSwipe}>
       <ArticleCard article={article} isActive={false} />
     </SwipeableListItem>
   )

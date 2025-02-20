@@ -1,24 +1,21 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import React, { ReactNode } from 'react'
+import React, { FC, PropsWithChildren } from 'react'
 import ReactModal from 'react-modal'
 
-import Button from './Button'
+import { Button, Panel } from '.'
 import styles from './Dialog.module.css'
-import Panel from './Panel'
 
-interface Props {
+interface Props extends PropsWithChildren {
   title: string
-  children: ReactNode
   onOk: (e: any) => void
 }
 
-export default ({ title, children, onOk }: Props) => (
+export const InfoDialog: FC<Props> = ({ title, children, onOk }) => (
   <ReactModal
     isOpen
     shouldCloseOnEsc
     shouldCloseOnOverlayClick
     shouldFocusAfterRender
-    appElement={document.getElementById('root')!}
     onRequestClose={onOk}
     className={styles.dialog}
     overlayClassName={styles.overlay}

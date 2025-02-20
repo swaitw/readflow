@@ -1,59 +1,43 @@
 /* eslint-disable react/jsx-no-target-blank */
-import gql from 'graphql-tag'
 import React from 'react'
-import { useQuery } from '@apollo/client'
 
-import authService from '../auth'
-import ErrorPanel from '../error/ErrorPanel'
-import { matchResponse } from '../helpers'
-import Loader from './Loader'
-import TimeAgo from './TimeAgo'
+import { TimeAgo } from '.'
 import styles from './UserInfos.module.css'
+import { useCurrentUser } from '../contexts'
+import { AUTHORITY, CLIENT_ID } from '../config'
+import { getAPIURL } from '../helpers'
 
-export const GetCurrentUser = gql`
-  query {
-    me {
-      username
-      hash
-      plan
-      last_login_at
-      created_at
-    }
+const getAccountURL = () => {
+  if (AUTHORITY.includes('realms')) {
+    // keycloak specifics
+    return `${AUTHORITY}/account?referrer=${CLIENT_ID}&referrer_uri=${encodeURI(document.location.href)}`
   }
-`
-
-interface User {
-  username: string
-  hash: string
-  plan: string
-  created_at: string
-  last_login_at: string
+  return AUTHORITY
 }
 
-export interface GetCurrentUserResponse {
-  me: User
+export const UserInfos = () => {
+  const user = useCurrentUser()
+  if (!user) {
+    return null
+  }
+  return (
+    <div className={styles.userInfos}>
+      <span>
+        <strong title={user.username}>{user.username}</strong>
+        <small>
+          Member <TimeAgo dateTime={user.created_at} />
+        </small>
+      </span>
+      {
+        AUTHORITY !== 'none' ?
+          <a href={getAccountURL()} target="_blank" title="Go to my profile page">
+            <img src={getAPIURL(`/avatar/${user.hash}`)} alt={user.username} crossOrigin='anonymous' />
+          </a>
+          :
+          <img src={getAPIURL(`/avatar/${user.hash}`)} alt={user.username} crossOrigin='anonymous' />
+      }
+    </div>
+  )
 }
 
-export default () => {
-  const { data, error, loading } = useQuery<GetCurrentUserResponse>(GetCurrentUser)
-
-  const render = matchResponse<GetCurrentUserResponse>({
-    Loading: () => <Loader />,
-    Error: (err) => <ErrorPanel>{err.message}</ErrorPanel>,
-    Data: (data) => (
-      <>
-        <span>
-          <strong title={data.me.username}>{data.me.username}</strong>
-          <small>
-            Member <TimeAgo dateTime={data.me.created_at} />
-          </small>
-        </span>
-        <a href={authService.getAccountUrl()} target="_blank" title="Go to my profile page">
-          <img src={`https://www.gravatar.com/avatar/${data.me.hash}?d=mp&s=42"`} alt={data.me.username} />
-        </a>
-      </>
-    ),
-  })
-
-  return <div className={styles.userInfos}>{render(loading, data, error)}</div>
-}
+export default UserInfos

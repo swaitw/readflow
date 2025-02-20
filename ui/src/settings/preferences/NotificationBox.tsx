@@ -1,22 +1,15 @@
-import React, { ReactNode, useCallback, useEffect, useState } from 'react'
+import React, { FC, PropsWithChildren, useCallback, useEffect, useState } from 'react'
 import { useApolloClient, useMutation } from '@apollo/client'
 import Switch from 'react-switch'
 
-import Box from '../../components/Box'
-import Button from '../../components/Button'
-import Loader from '../../components/Loader'
-import ErrorPanel from '../../error/ErrorPanel'
+import { Box, Button, ErrorPanel, Loader } from '../../components'
 import { isNotificationGranted, isNotificationSupported, subscribePush, unSubscribePush } from '../../helpers'
-import { CreatePushSubscriptionResponse, DeletePushSubscriptionResponse, GetDeviceResponse } from '../components/models'
-import { CreatePushSubscription, DeletePushSubscription, GetDevice } from '../components/queries'
+import { CreatePushSubscriptionResponse, DeletePushSubscriptionResponse, GetDeviceResponse } from './models'
+import { CreatePushSubscription, DeletePushSubscription, GetDevice } from './queries'
 
 const deviceIdKey = 'readflow.deviceId'
 
-interface NotificationSupportProps {
-  children: ReactNode
-}
-
-const NotificationSupport = ({ children }: NotificationSupportProps) => {
+const NotificationSupport: FC<PropsWithChildren> = ({ children }) => {
   const supported = isNotificationSupported()
   const [allowed, setAllowed] = useState(isNotificationGranted())
 
@@ -84,7 +77,7 @@ const NotificationSwitch = () => {
         } else {
           setActivated(true)
         }
-      } catch (err) {
+      } catch (err: any) {
         setError(err)
       } finally {
         setLoading(false)
@@ -110,7 +103,7 @@ const NotificationSwitch = () => {
           localStorage.setItem(deviceIdKey, _id.toString())
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       setError(err)
     } finally {
       setLoading(false)
@@ -122,7 +115,7 @@ const NotificationSwitch = () => {
       setLoading(true)
       await deletePushSubscriptionMutation({ variables: { id: pushID } })
       resetSubscription()
-    } catch (err) {
+    } catch (err: any) {
       setError(err)
     } finally {
       setLoading(false)
@@ -144,11 +137,15 @@ const NotificationSwitch = () => {
   )
 }
 
-export default () => (
+const NotificationBox = () => (
   <Box title="Notifications">
-    <p>Receive notifications on your device when new articles are available.</p>
+    <p>
+      Receive notifications on this device.
+    </p>
     <NotificationSupport>
       <NotificationSwitch />
     </NotificationSupport>
   </Box>
 )
+
+export default NotificationBox

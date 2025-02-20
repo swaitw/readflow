@@ -1,20 +1,14 @@
-import React, { RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import React, { ReactNode, RefObject, useCallback, useEffect, useRef, useState } from 'react'
 
-import ButtonIcon from '../../components/ButtonIcon'
-import Center from '../../components/Center'
-import Empty from '../../components/Empty'
-import Panel from '../../components/Panel'
-import { useMedia } from '../../hooks'
-import useInfiniteScroll from '../../hooks/useInfiniteScroll'
-import useKeyboard from '../../hooks/useKeyboard'
+import { ButtonIcon, Center, Empty, Panel } from '../../components'
+import { useInfiniteScroll, useKeyboard, useMedia } from '../../hooks'
 import { Article } from '../models'
-import ArticleCard from './ArticleCard'
+import { ArticleCard, SwipeableArticleCard } from '.'
 import styles from './ArticleList.module.css'
-import SwipeableArticleCard from './SwipeableArticleCard'
 
 interface Props {
   articles: Article[]
-  emptyMessage: string
+  empty: ReactNode
   hasMore: boolean
   swipeable?: boolean
   variant?: 'list' | 'grid'
@@ -45,13 +39,13 @@ const useKeyNavigation = (ref: RefObject<HTMLUListElement>, itemClassName: strin
   )
 }
 
-export default (props: Props) => {
+export const ArticleList = (props: Props) => {
   const {
     articles,
     fetchMoreArticles,
     refetch,
     hasMore,
-    emptyMessage = 'No more article to read',
+    empty = <span>No more article to read</span>,
     swipeable = false,
     variant = 'list',
   } = props
@@ -88,9 +82,9 @@ export default (props: Props) => {
   if (articles.length === 0) {
     return (
       <Empty>
-        <ButtonIcon title="Refresh" icon="refresh" onClick={reload} loading={loading} />
+        {empty}
         <br />
-        <span>{emptyMessage}</span>
+        <ButtonIcon title="Refresh" icon="refresh" onClick={reload} loading={loading} />
       </Empty>
     )
   }
@@ -109,7 +103,7 @@ export default (props: Props) => {
       {(isFetchingMore || loading) && (
         <li>
           <Panel>
-            <Center>Fetching more articles...</Center>
+            <Center>Fetching more articles ...</Center>
           </Panel>
         </li>
       )}

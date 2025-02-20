@@ -1,37 +1,30 @@
-import React, { FormEvent, useCallback, useContext, useEffect, useState } from 'react'
+import React, { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { RouteComponentProps } from 'react-router'
 import { Link } from 'react-router-dom'
 import { useFormState } from 'react-use-form-state'
 
-import Button from '../../../components/Button'
-import FormCheckboxField from '../../../components/FormCheckboxField'
-import FormInputField from '../../../components/FormInputField'
-import FormSelectField from '../../../components/FormSelectField'
-import Panel from '../../../components/Panel'
-import { MessageContext } from '../../../context/MessageContext'
-import ErrorPanel from '../../../error/ErrorPanel'
+import { useMessage } from '../../../contexts/MessageContext'
+import { Button, ErrorPanel, FormCheckboxField, FormInputField, FormSelectField, Panel } from '../../../components'
 import { getGQLError, isValidForm } from '../../../helpers'
 import { usePageTitle } from '../../../hooks'
 import { updateCacheAfterCreate } from './cache'
-import { CreateOrUpdateOutgoingWebhookResponse, CreateOrUpdateOutgoingWebhookRequest } from './models'
-import KeeperConfigForm from './providers/KeeperConfigForm'
+import { CreateOrUpdateOutgoingWebhookResponse, CreateOrUpdateOutgoingWebhookRequest, Provider } from './models'
+import providers from './providers'
 import { CreateOrUpdateOutgoingWebhook } from './queries'
-import WallabagConfigForm from './providers/WallabagConfigForm'
-import GenericConfigForm from './providers/GenericConfigForm'
-import PocketConfigForm from './providers/PocketConfigForm'
+import OutgoingWebhookHelp from './OutgoingWebhookHelp'
 
 interface AddOutgoingWebhookFormFields {
   alias: string
-  provider: string
+  provider: Provider
   isDefault: boolean
 }
 
-const getFormStateFromQueryParams = (qs: string) => {
+const getFormStateFromQueryParams = (qs: string): AddOutgoingWebhookFormFields => {
   const params = new URLSearchParams(qs)
   return {
     alias: params.get('alias') || '',
-    provider: params.get('provider') || '',
+    provider: (params.get('provider') as Provider) || '',
     isDefault: false,
   }
 }
@@ -47,7 +40,7 @@ export default ({ history, location: { search } }: RouteComponentProps) => {
   usePageTitle('Settings - Add new outgoing webhook')
   const [config, setConfig] = useState<any>(getConfigFromQueryParams(search))
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const { showMessage } = useContext(MessageContext)
+  const { showMessage } = useMessage()
   const [formState, { text, checkbox, select }] = useFormState<AddOutgoingWebhookFormFields>(
     getFormStateFromQueryParams(search)
   )
@@ -88,11 +81,14 @@ export default ({ history, location: { search } }: RouteComponentProps) => {
         return
       }
       const { alias, provider, isDefault } = formState.values
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      addOutgoingWebhook({ alias, provider, is_default: isDefault, config: JSON.stringify(config) })
+      const [conf, secrets] = providers[provider].marshal(config)
+      addOutgoingWebhook({ alias, provider, is_default: isDefault, config: conf, secrets })
     },
     [formState, config, addOutgoingWebhook]
   )
+
+  const { provider } = formState.values
+  const ProviderConfigForm = provider ? providers[provider].form : null
 
   return (
     <Panel>
@@ -100,20 +96,15 @@ export default ({ history, location: { search } }: RouteComponentProps) => {
         <h1>Add new outgoing webhook</h1>
       </header>
       <section>
+        <OutgoingWebhookHelp />
         {errorMessage != null && <ErrorPanel title="Unable to add new outgoing webhook">{errorMessage}</ErrorPanel>}
         <form onSubmit={handleOnSubmit}>
-          <FormInputField label="Alias" {...text('alias')} error={formState.errors.alias} required autoFocus />
+          <FormInputField label="Alias" {...text('alias')} error={formState.errors.alias} required pattern=".*\S+.*" maxLength={32} autoFocus />
           <FormSelectField label="Provider" {...select('provider')} error={formState.errors.provider} required>
-            <option>Please select a webhook provider</option>
-            <option value="generic">Generic webhook</option>
-            <option value="keeper">Keeper</option>
-            <option value="wallabag">Wallabag</option>
-            <option value="pocket">Pocket</option>
+            <option value="">Please select a webhook provider</option>
+            {Object.entries(providers).map(([key, p]) => <option key={`provider-${key}`} value={key}>{p.label}</option>)}
           </FormSelectField>
-          {formState.values.provider === 'generic' && <GenericConfigForm onChange={setConfig} config={config} />}
-          {formState.values.provider === 'keeper' && <KeeperConfigForm onChange={setConfig} config={config} />}
-          {formState.values.provider === 'wallabag' && <WallabagConfigForm onChange={setConfig} config={config} />}
-          {formState.values.provider === 'pocket' && <PocketConfigForm onChange={setConfig} config={config} />}
+          { ProviderConfigForm && <ProviderConfigForm onChange={setConfig} config={config} locked={false} /> }
           <FormCheckboxField label="To use by default" {...checkbox('isDefault')} />
         </form>
       </section>

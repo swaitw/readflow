@@ -9,25 +9,29 @@ export const updateCacheAfterCreate = (proxy: DataProxy, mutationResult: { data?
     return
   }
   const article = mutationResult.data.addArticle
-  // Update categories `_all` value
+  // Update categories `_inbox` value
   try {
     const previousData = proxy.readQuery<GetCategoriesResponse>({
       query: GetCategories,
     })
     if (previousData && previousData.categories) {
       const categories = { ...previousData.categories }
-      categories._all++
+      categories._inbox++
       proxy.writeQuery({ data: { categories }, query: GetCategories })
     }
   } catch (err) {
-    console.warn('unable to update categories cache when creating article')
+    console.warn('unable to update categories cache when creating article', err)
   }
-  // Update article
-  proxy.writeQuery({
-    data: { article },
-    query: GetArticle,
-    variables: { id: article.id },
-  })
+  try {
+    // Update article
+    proxy.writeQuery({
+      data: { article },
+      query: GetArticle,
+      variables: { id: article.id },
+    })
+  } catch (err) {
+    console.warn('unable to update article cache when creating article', err)
+  }
 }
 
 export const updateCacheAfterUpdate = (proxy: DataProxy, mutationResult: { data?: UpdateArticleResponse | null }) => {
@@ -35,19 +39,20 @@ export const updateCacheAfterUpdate = (proxy: DataProxy, mutationResult: { data?
     return
   }
   const updated = mutationResult.data.updateArticle
-  // Update categories `_all` and `_starred` values
+  // Update categories `_inbox` and `_starred` values
   try {
     const previousData = proxy.readQuery<GetCategoriesResponse>({
       query: GetCategories,
     })
     if (previousData && previousData.categories) {
       const categories = { ...previousData.categories }
-      categories._all = updated._all
+      categories._inbox = updated._inbox
+      categories._to_read = updated._to_read
       categories._starred = updated._starred
       proxy.writeQuery({ data: { categories }, query: GetCategories })
     }
   } catch (err) {
-    console.warn('unable to update categories cache when updating article')
+    console.warn('unable to update categories cache when updating article', err)
   }
 }
 
@@ -59,16 +64,16 @@ export const updateCacheAfterMarkAllAsRead = (
     return
   }
   const updated = mutationResult.data.markAllArticlesAsRead
-  // Update categories and `_all` value
+  // Update categories and `_inbox` value
   try {
     const previousData = proxy.readQuery<GetCategoriesResponse>({
       query: GetCategories,
     })
     if (previousData && previousData.categories) {
       const categories = { ...previousData.categories }
-      categories._all = updated._all
+      categories._inbox = updated._inbox
       const { entries } = updated
-      // Merge categories unread values
+      // Merge categories inbox values
       categories.entries.forEach((cat) => {
         const found = entries.find((c) => cat.id === c.id)
         if (found) {
@@ -78,6 +83,6 @@ export const updateCacheAfterMarkAllAsRead = (
       proxy.writeQuery({ data: { categories }, query: GetCategories })
     }
   } catch (err) {
-    console.warn('unable to update categories cache when mark all as read')
+    console.warn('unable to update categories cache when mark all as read', err)
   }
 }

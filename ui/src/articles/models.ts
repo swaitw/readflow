@@ -6,6 +6,8 @@ export interface Article {
   html: string
   text: string
   image: string
+  thumbhash: string
+  thumbnails?: ArticleThumbnail[]
   url: string
   status: ArticleStatus
   stars: number
@@ -16,7 +18,12 @@ export interface Article {
   updated_at: string
 }
 
-export type ArticleStatus = 'read' | 'unread'
+export interface ArticleThumbnail {
+  size: string
+  hash: string
+}
+
+export type ArticleStatus = 'inbox' | 'read' | 'to_read'
 export type SortOrder = 'asc' | 'desc'
 export type SortBy = 'key' | 'stars'
 
@@ -46,25 +53,39 @@ export interface GetArticleResponse {
 
 export interface UpdateArticleRequest {
   id: number
+  title?: string
+  text?: string
   status?: ArticleStatus
   stars?: number
+  category_id?: number
+  refresh?: boolean
 }
 
 export interface UpdateArticleResponse {
   updateArticle: {
     article: Article
-    _all: number
+    _inbox: number
+    _to_read: number
     _starred: number
+  }
+}
+
+export interface SendArticleToOutgoingWebhookResponse {
+  sendArticleToOutgoingWebhook: {
+    url?: string
+    text?: string
+    json?: string
   }
 }
 
 export interface MarkAllArticlesAsReadRequest {
   category: number | null
+  status: ArticleStatus
 }
 
 export interface MarkAllArticlesAsReadResponse {
   markAllArticlesAsRead: {
-    _all: number
+    _inbox: number
     entries: Category[]
   }
 }

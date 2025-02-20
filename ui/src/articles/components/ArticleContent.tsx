@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import mousetrap from 'mousetrap'
-import React, { useContext, useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
-import { LocalConfigurationContext } from '../../context/LocalConfigurationContext'
+import { useLocalConfiguration } from '../../contexts/LocalConfigurationContext'
 import { Article } from '../models'
 import styles from './ArticleContent.module.css'
 import readable from './readable'
@@ -14,27 +14,36 @@ interface Props {
 }
 
 const getHTMLContent = (body: string, theme: string) => `
+<!DOCTYPE html>
 <html lang="en">
   <head>
+    <base target="_blank">
     <meta charset="utf-8" />
     <style>
-      ${readable.css}
+      ${readable.style}
     </style>
   </head>
   <body data-theme="${theme}">
     ${body}
     <script>
-window.onload = function() {
-  document.querySelectorAll('a').forEach(a => a.setAttribute('target', '_blank'))
-}
+      ${readable.script}
     </script>
   </body>
 </html>
 `
 
-export default ({ article }: Props) => {
+type KeyMap = {
+  [key: string]: string
+}
+const keyMap: KeyMap = {
+  'Delete': 'del',
+  'Insert': 'ins',
+}
+
+export const ArticleContent = ({ article }: Props) => {
+  const [alreadyRendered, setAlreadyRendered] = useState(false)
   const contentRef = useRef<HTMLDivElement>(null)
-  const { localConfiguration } = useContext(LocalConfigurationContext)
+  const { localConfiguration } = useLocalConfiguration()
   let { theme } = localConfiguration
   if (theme === 'auto') {
     const mql = getMql()
@@ -42,8 +51,9 @@ export default ({ article }: Props) => {
   }
 
   useEffect(() => {
-    if (contentRef.current) {
+    if (contentRef.current && !alreadyRendered) {
       const ifrm = document.createElement('iframe')
+      // console.log('render')
       contentRef.current.innerHTML = ''
       contentRef.current.appendChild(ifrm)
       const doc = ifrm.contentWindow ? ifrm.contentWindow.document : ifrm.contentDocument
@@ -52,34 +62,18 @@ export default ({ article }: Props) => {
         doc.write(getHTMLContent(article.html || article.text, theme))
         // Keyboard events have to propagate outside the iframe
         doc.onkeydown = function (e: KeyboardEvent) {
-          switch (e.keyCode) {
-            case 8:
-              mousetrap.trigger('backspace')
-              break
-            case 77:
-              mousetrap.trigger('m')
-              break
-            case 79:
-              mousetrap.trigger('o')
-              break
-            case 82:
-              mousetrap.trigger('r')
-              break
-            case 83:
-              mousetrap.trigger('s')
-              break
-            case 191:
-              mousetrap.trigger('?')
-              break
-            // default:
-            // console.log(e.keyCode)
+          if (e.key in keyMap) {
+            mousetrap.trigger(keyMap[e.key])
+          } else {
+            mousetrap.trigger(e.key.toLowerCase())
           }
         }
         doc.close()
       }
       ifrm.focus()
+      setAlreadyRendered(true)
     }
-  }, [article, theme])
+  }, [alreadyRendered, article, theme])
 
   return <article className={styles.content} ref={contentRef} />
 }

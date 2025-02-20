@@ -1,13 +1,9 @@
-import React, { ReactNode } from 'react'
+import React, { FC, PropsWithChildren } from 'react'
 
-import Center from './Center'
+import { Center } from '.'
 import styles from './Empty.module.css'
 
-interface Props {
-  children: ReactNode
-}
-
-export default ({ children }: Props) => (
+export const Empty: FC<PropsWithChildren> = ({ children }) => (
   <Center>
     <span className={styles.empty}>{children}</span>
   </Center>

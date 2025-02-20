@@ -1,26 +1,24 @@
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { useMutation } from '@apollo/client'
 
-import { MessageContext } from '../../context/MessageContext'
+import { useMessage } from '../../contexts'
 import { getGQLError } from '../../helpers'
-import useKeyboard from '../../hooks/useKeyboard'
+import { useKeyboard } from '../../hooks'
 import { updateCacheAfterUpdate } from '../cache'
 import { Article, UpdateArticleRequest, UpdateArticleResponse } from '../models'
 import { UpdateArticle } from '../queries'
-import DropdownMenu, { DropDownOrigin } from '../../components/DropdownMenu'
-import Stars from '../../components/Stars'
+import { DrawerMenu, Stars } from '../../components'
 
 interface Props {
   article: Article
   keyboard?: boolean
-  origin?: DropDownOrigin
   onSuccess?: (article: Article) => void
 }
 
-export default (props: Props) => {
-  const { article, keyboard = false, origin, onSuccess } = props
+export const StarsButton = (props: Props) => {
+  const { article, keyboard = false, onSuccess } = props
 
-  const { showErrorMessage } = useContext(MessageContext)
+  const { showErrorMessage } = useMessage()
   const [loading, setLoading] = useState(false)
   const [updateArticleMutation] = useMutation<UpdateArticleResponse, UpdateArticleRequest>(UpdateArticle)
 
@@ -54,12 +52,10 @@ export default (props: Props) => {
   const icon = article.stars > 0 ? 'star' : 'star_outline'
 
   return (
-    <DropdownMenu title={title} origin={origin} icon={loading ? 'loop' : icon} style={style}>
-      <ul>
-        <li>
-          <Stars value={article.stars} onChange={updateArticle} />
-        </li>
-      </ul>
-    </DropdownMenu>
+    <DrawerMenu title={title} icon={loading ? 'loop' : icon} style={style}>
+      <div style={{ textAlign: 'center' }}>
+        <Stars value={article.stars} onChange={updateArticle} />
+      </div>
+    </DrawerMenu>
   )
 }

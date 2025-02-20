@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@apollo/client'
-import React, { useContext, useState } from 'react'
+import React, { useState } from 'react'
 import { useModal } from 'react-modal-hook'
 import { RouteComponentProps } from 'react-router'
 import { Link } from 'react-router-dom'
@@ -12,16 +12,32 @@ import {
   GetCategoriesResponse,
 } from '../../categories/models'
 import { DeleteCategories, GetCategories } from '../../categories/queries'
-import Button from '../../components/Button'
-import ConfirmDialog from '../../components/ConfirmDialog'
-import DataTable, { OnSelectedFn } from '../../components/DataTable'
-import Loader from '../../components/Loader'
-import Panel from '../../components/Panel'
-import TimeAgo from '../../components/TimeAgo'
-import { MessageContext } from '../../context/MessageContext'
-import ErrorPanel from '../../error/ErrorPanel'
+import {
+  Button,
+  ButtonIcon,
+  ConfirmDialog,
+  DataTable,
+  ErrorPanel,
+  Loader,
+  OnSelectedFn,
+  Panel,
+  TimeAgo,
+} from '../../components'
+import { useMessage } from '../../contexts'
 import { getGQLError, matchResponse } from '../../helpers'
 import { usePageTitle } from '../../hooks'
+
+const CategoryDates = ({ val }: { val: Category }) => (
+  <small>
+    Created <TimeAgo dateTime={val.created_at} />
+    {val.updated_at && (
+      <>
+        <br />
+        Updated <TimeAgo dateTime={val.updated_at} />
+      </>
+    )}
+  </small>
+)
 
 const definition = [
   {
@@ -33,23 +49,25 @@ const definition = [
     ),
   },
   {
-    title: 'Created',
-    render: (val: Category) => <TimeAgo dateTime={val.created_at} />,
+    title: 'Date(s)',
+    render: (val: Category) => <CategoryDates val={val} />,
   },
   {
-    title: 'Updated',
-    render: (val: Category) => <TimeAgo dateTime={val.updated_at} />,
+    title: '',
+    render: (val: Category) => (
+      <ButtonIcon title="Edit category" as={Link} to={`/settings/categories/${val.id}`} icon="edit" />
+    ),
   },
 ]
 
-export default ({ match }: RouteComponentProps) => {
+const CategoriesTab = ({ match }: RouteComponentProps) => {
   usePageTitle('Settings - Categories')
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [selection, setSelection] = useState<number[]>([])
   const { data, error, loading } = useQuery<GetCategoriesResponse>(GetCategories)
   const [deleteCategoriesMutation] = useMutation<DeleteCategoriesResponse, DeleteCategoriesRequest>(DeleteCategories)
-  const { showMessage } = useContext(MessageContext)
+  const { showMessage } = useMessage()
 
   const onSelectedHandler: OnSelectedFn = (keys) => {
     setSelection(keys)
@@ -125,7 +143,7 @@ export default ({ match }: RouteComponentProps) => {
           </Button>
         </header>
         <section>
-          <p>Automatically organize your articles into categories using the rule engine.</p>
+          <p>Organize your articles into categories.</p>
           {errorMessage != null && <ErrorPanel title="Unable to delete categories">{errorMessage}</ErrorPanel>}
           {render(loading, data, error)}
         </section>
@@ -133,3 +151,5 @@ export default ({ match }: RouteComponentProps) => {
     </Panel>
   )
 }
+
+export default CategoriesTab

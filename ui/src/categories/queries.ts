@@ -3,12 +3,13 @@ import gql from 'graphql-tag'
 export const GetCategories = gql`
   query {
     categories {
-      _all
+      _inbox
+      _to_read
       _starred
       entries {
         id
         title
-        unread
+        inbox
         created_at
         updated_at
       }
@@ -21,7 +22,6 @@ export const GetCategory = gql`
     category(id: $id) {
       id
       title
-      rule
       created_at
       updated_at
     }
@@ -35,11 +35,13 @@ export const DeleteCategories = gql`
 `
 
 export const CreateOrUpdateCategory = gql`
-  mutation createOrUpdateCategory($id: ID, $title: String, $rule: String) {
-    createOrUpdateCategory(id: $id, title: $title, rule: $rule) {
+  mutation createOrUpdateCategory(
+    $id: ID
+    $title: String
+  ) {
+    createOrUpdateCategory(id: $id, title: $title) {
       id
       title
-      rule
       created_at
       updated_at
     }

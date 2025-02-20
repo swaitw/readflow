@@ -1,17 +1,13 @@
-import React, { useCallback, useContext, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useLocation } from 'react-router'
 
-import ArticleList from '../articles/components/ArticleList'
-import ArticlesPageMenu from '../articles/components/ArticlesPageMenu'
+import { ArticleList, ArticlesPageMenu, NoArticleBg } from '../articles/components'
 import { GetArticlesRequest, GetArticlesResponse } from '../articles/models'
-import Center from '../components/Center'
-import Loader from '../components/Loader'
-import Panel from '../components/Panel'
 import { connectOffline, OfflineProps } from '../containers/OfflineContainer'
-import { LocalConfiguration, LocalConfigurationContext, SortOrder } from '../context/LocalConfigurationContext'
-import ErrorPanel from '../error/ErrorPanel'
+import { LocalConfiguration, SortOrder, useLocalConfiguration } from '../contexts/LocalConfigurationContext'
+import { Center, ErrorPanel, Loader, Panel } from '../components'
 import { getURLParam, matchState } from '../helpers'
-import Page from '../layout/Page'
+import { Page } from '../layout'
 
 const emptyQuery = {
   limit: null,
@@ -33,8 +29,8 @@ const buildQueryFromLocation = (qs: string, localConfiguration: LocalConfigurati
   }
 }
 
-export const OfflineArticlesPage = ({ offlineArticles, fetchOfflineArticles }: OfflineProps) => {
-  const { localConfiguration } = useContext(LocalConfigurationContext)
+const OfflineArticlesPage = ({ offlineArticles, fetchOfflineArticles }: OfflineProps) => {
+  const { localConfiguration } = useLocalConfiguration()
   const location = useLocation()
   const [req, setReq] = useState<GetArticlesRequest>(buildQueryFromLocation(location.search, localConfiguration))
   const { data, error, loading } = offlineArticles
@@ -72,21 +68,19 @@ export const OfflineArticlesPage = ({ offlineArticles, fetchOfflineArticles }: O
       return (
         <ArticleList
           articles={d.articles.entries}
-          emptyMessage="no offline articles"
+          empty={<NoArticleBg name="offline" title="if Internet does not exist, there is nothing here either" />}
           hasMore={d.articles.hasNext}
           refetch={refetch}
           fetchMoreArticles={fetchMoreArticles}
+          variant={localConfiguration.display.offline.mode}
         />
       )
     },
   })
 
-  let title = ' '
-  if (data) {
-    const { totalCount } = data.articles
-    const plural = totalCount > 1 ? ' articles' : ' article'
-    title = totalCount + ' offline ' + plural
-  }
+  const nb = data ? data.articles.totalCount : 0
+  const title = `${nb} offline article${nb > 0 ? 's' : ''}`
+
   return (
     <Page title={title} actions={<ArticlesPageMenu refresh={refetch} variant="offline" req={req} />}>
       {render(loading, data, error)}

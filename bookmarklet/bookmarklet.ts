@@ -8,9 +8,23 @@ declare global {
   }
 }
 
+type Article = {
+  id?: number
+  title?: string
+  url?: string
+  html?: string
+  text?: string
+  image?: string
+}
+
+type HistoryItem = {
+  parent: Node | null
+  element: HTMLElement | ChildNode
+  placeholder: Text
+}
+
 const trapMouseEvent = function (callback: (el: HTMLElement, evt?: MouseEvent) => void) {
   return function (ev: MouseEvent) {
-    ev.cancelBubble = true
     ev.stopPropagation()
     ev.preventDefault()
     const el = this as HTMLElement
@@ -18,38 +32,54 @@ const trapMouseEvent = function (callback: (el: HTMLElement, evt?: MouseEvent) =
   }
 }
 
-const setMouserOverStyle = function (el: HTMLElement, evt: MouseEvent) {
-  Object.assign(el.style, evt.ctrlKey ? styles.keep : styles.remove)
+const setMouserOverStyle = function (el: HTMLElement, evt?: MouseEvent) {
+  Object.assign(el.style, evt && evt.ctrlKey ? styles.keep : styles.remove)
 }
 
 const unsetMouseOverStyle = function (el: HTMLElement) {
   Object.assign(el.style, styles.initial)
 }
 
-type Article = {
-  title: string
-  url: string
-  html?: string
-}
-
-type HistoryItem = {
-  parent: Node
-  element: HTMLElement | ChildNode
-  placeholder: Text
+const addOpenGraphProps = function (doc: Document, article: Article): Article {
+  return Array.from(doc.head.getElementsByTagName('meta')).reduce<Article>(
+    (acc, $meta) => {
+      const content = $meta.getAttribute('content')
+      if (!content) {
+        return acc
+      }
+      switch ($meta.getAttribute('property')) {
+        case 'og:image':
+          acc.image = content
+          break
+        case 'og:description':
+          acc.text = content
+          break
+        case 'og:title':
+          acc.title = content
+          break
+        default:
+          break
+      }
+      return acc
+    },
+    article
+  )
 }
 
 class ReadflowBookmarklet {
-  private ui: string
+  private origin: string
   private doc: Document
   private history: HistoryItem[]
   private endpoint: string
   private key: string
-  private popup: Window
+  private popup: Window | null
   private controls: Node
+  private article: Article | null
 
   constructor() {
     this.doc = document
     this.history = []
+    this.article = null
   }
 
   private clickElement(el: HTMLElement, evt: MouseEvent) {
@@ -63,7 +93,7 @@ class ReadflowBookmarklet {
             element: node,
             placeholder,
           })
-          node.parentNode.replaceChild(placeholder, node)
+          node.parentNode?.replaceChild(placeholder, node)
         }
       })
       this.doc.body.appendChild(el)
@@ -74,14 +104,14 @@ class ReadflowBookmarklet {
         element: el,
         placeholder,
       })
-      el.parentNode.replaceChild(placeholder, el)
+      el.parentNode?.replaceChild(placeholder, el)
     }
   }
 
   private undo() {
     if (this.history.length) {
       const item = this.history.pop()
-      item.parent.replaceChild(item.element, item.placeholder)
+      item?.parent?.replaceChild(item.element, item.placeholder)
     }
   }
 
@@ -109,7 +139,7 @@ class ReadflowBookmarklet {
     this.doc.body.childNodes.forEach((node) => {
       if (node.nodeType === Node.ELEMENT_NODE && node.nodeName !== 'SCRIPT' && node !== this.controls) {
         result += (node as HTMLElement).outerHTML
-        console.log(node)
+        // console.log(node)
       }
     })
     return result
@@ -120,7 +150,7 @@ class ReadflowBookmarklet {
     const controls = this.doc.createElement('div')
     Object.assign(controls.style, styles.controls)
     const frame = this.doc.createElement('iframe')
-    frame.setAttribute('src', this.ui)
+    frame.setAttribute('src', this.origin + '/bookmarklet.html')
     Object.assign(frame.style, styles.iframe)
     const drag = this.doc.createElement('div')
     Object.assign(drag.style, styles.drag)
@@ -162,8 +192,15 @@ class ReadflowBookmarklet {
     })
     if (res.ok) {
       console.debug('article added to readflow')
+      return res.json()
     } else {
       throw `unable to send article: ${res.statusText}`
+    }
+  }
+
+  private openResult() {
+    if (this.article) {
+      document.location.href = `${this.origin}/inbox/${this.article.id}`
     }
   }
 
@@ -173,21 +210,28 @@ class ReadflowBookmarklet {
       case 'content':
       case 'page':
         console.debug(`sending ${event}...`)
-        this.popup.postMessage('loading', '*')
-        this.post({
+        this.popup?.postMessage('loading', '*')
+        let article: Article = {
           title: document.title,
           url: document.location.href,
-          html: event === 'content' ? this.getContent() : undefined,
-        }).then(
-          () => {
-            alert('Article successfully put in your reaflow!')
-            document.location.reload()
+        }
+        if (event === 'content') {
+          article.html = this.getContent()
+          article = addOpenGraphProps(this.doc, article)
+        }
+        this.post(article).then(
+          (resp) => {
+            this.article = resp.Articles[0]
+            this.popup?.postMessage('success', '*')
           },
           (err) => {
             alert(err)
-            this.popup.postMessage('error', '*')
+            this.popup?.postMessage('error', '*')
           }
         )
+        break
+      case 'openResult':
+        this.openResult()
         break
       case 'close':
         this.close()
@@ -197,9 +241,9 @@ class ReadflowBookmarklet {
     }
   }
 
-  boot(origin, baseurl, key: string) {
+  boot(origin: string, baseurl: string, key: string) {
     this.endpoint = baseurl + '/articles'
-    this.ui = origin + '/bookmarklet.html'
+    this.origin = origin
     this.key = key
     this.registerEventsListeners()
     this.registerKeyboardShortcuts()

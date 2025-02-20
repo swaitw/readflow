@@ -6,8 +6,8 @@ export GO111MODULE=on
 APPNAME=readflow
 
 # Go configuration
-GOOS?=linux
-GOARCH?=amd64
+GOOS?=$(shell go env GOHOSTOS)
+GOARCH?=$(shell go env GOHOSTARCH)
 
 # Add exe extension if windows target
 is_windows:=$(filter windows,$(GOOS))
@@ -20,7 +20,7 @@ ARCHIVE=$(APPNAME)-$(GOOS)-$(GOARCH).tgz
 EXECUTABLE=$(APPNAME)$(EXT)
 
 # Extract version infos
-PKG_VERSION:=github.com/ncarlier/$(APPNAME)/pkg/version
+PKG_VERSION:=github.com/ncarlier/$(APPNAME)/internal/version
 VERSION:=`git describe --always --dirty`
 GIT_COMMIT:=`git rev-list -1 HEAD --abbrev-commit`
 BUILT:=`date`
@@ -38,6 +38,9 @@ root_dir:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 makefiles:=$(root_dir)/makefiles
 include $(makefiles)/help.Makefile
 include $(makefiles)/docker/compose.Makefile
+
+# Some variables
+db_service?=readflow-db-1
 
 ## Clean built files
 clean:
@@ -60,11 +63,41 @@ build: autogen
 
 release/$(EXECUTABLE): build
 
+# Check code style
+check-style:
+	echo ">>> Checking code style..."
+	go vet ./...
+	go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+.PHONY: check-style
+
+# Check code criticity
+check-criticity:
+	echo ">>> Checking code criticity..."
+	go run github.com/go-critic/go-critic/cmd/gocritic@latest check -enableAll ./...
+.PHONY: check-criticity
+
+# Check code security
+check-security:
+	echo ">>> Checking code security..."
+	go run github.com/securego/gosec/v2/cmd/gosec@latest -quiet ./...
+.PHONY: check-security
+
+## Code quality checks
+checks: check-style check-criticity
+.PHONY: checks
+
 ## Run tests
 test:
 	echo ">>> Running tests..."
 	go test ./...
 .PHONY: test
+
+## Run test coverage
+test-cov:
+	echo ">>> Running test coverage..."
+	go test -coverprofile=release/coverage.out ./...
+	go tool cover -html=release/coverage.out -o release/coverage.html
+.PHONY: test-cov
 
 ## Install executable
 install: release/$(EXECUTABLE)
@@ -78,10 +111,9 @@ image:
 	docker build --rm -t ncarlier/$(APPNAME) .
 .PHONY: image
 
-## Generate changelog
-changelog:
+# Generate changelog
+CHANGELOG.md:
 	standard-changelog --first-release
-.PHONY: changelog
 
 ## Generate documentation website
 docs:
@@ -98,7 +130,7 @@ landing:
 ## Generate Web UI
 ui:
 	echo ">>> Building Web UI..."
-	cd ui && npm install --silent && REACT_APP_VERSION=${VERSION} npm run build
+	cd ui && npm install --silent --legacy-peer-deps && REACT_APP_VERSION=${VERSION} npm run build
 .PHONY: ui
 
 ## Build bookmarklet
@@ -110,7 +142,7 @@ bookmarklet:
 .PHONY: bookmarklet
 
 ## Create archive
-archive: release/$(EXECUTABLE)
+archive: release/$(EXECUTABLE) CHANGELOG.md
 	echo ">>> Creating release/$(ARCHIVE) archive..."
 	tar czf release/$(ARCHIVE) README.md LICENSE -C release/ $(EXECUTABLE)
 	rm release/$(EXECUTABLE)
@@ -127,15 +159,9 @@ distribution:
 
 ## Start development server (aka: a test database instance)
 dev-server:
-	docker-compose -f docker-compose.dev.yml down
-	docker-compose -f docker-compose.dev.yml up
+	docker compose -f docker-compose.dev.yml down
+	docker compose -f docker-compose.dev.yml up
 .PHONY: dev-server
-
-## Start mocked server (aka: full stack service with mocks)
-mock-server:
-	docker-compose -f docker-compose.mock.yml down
-	docker-compose -f docker-compose.mock.yml up
-.PHONY: mock-server
 
 ## Deploy containers to Docker host
 deploy: compose-build compose-up
@@ -147,26 +173,30 @@ undeploy: compose-down
 
 ## Backup database
 backup:
-	archive=backup/db-`date -I`.dump
-	echo "Backuping PosgreSQL database ($$archive)..."
+	archive=backup/$(db_service)-`date -I`.dump
+	echo "Backuping PosgreSQL database ($(db_service) ==> $$archive)..."
 	mkdir -p backup
-	docker exec -u postgres readflow_db_1 pg_dump -Fc reader > $$archive
-	gzip $$archive
+	docker exec -u postgres $(db_service) pg_dumpall > $$archive
+	gzip -f $$archive
 	echo "done."
 .ONESHELL:
 .PHONY: backup
 
 ## Restore database
 restore:
-	echo "Restoring $(archive) database dump ..."
+	echo "Restoring $(archive) database dump to $(db_service) ..."
 	@while [ -z "$$CONTINUE" ]; do \
 		read -r -p "Are you sure? [y/N]: " CONTINUE; \
 	done ; \
-	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
-	docker exec -i -u postgres readflow_db_1 pg_restore -C -d postgres < $(archive)
+	[ $$CONTINUE = "y" ] && docker exec -i -u postgres $(db_service) psql -U postgres -d postgres < $(archive)
 .PHONY: restore
 
 ## Open database client
 db-client:
-	docker exec -it -u postgres readflow_db_1 psql -U postgres
+	docker exec -it -u postgres $(db_service) psql -U postgres
 .PHONY: db-client
+
+var/block-list.txt:
+	echo ">>> Downloading blocklist file..."
+	mkdir -p var
+	wget -O var/block-list.txt https://raw.githubusercontent.com/anudeepND/blacklist/master/adservers.txt

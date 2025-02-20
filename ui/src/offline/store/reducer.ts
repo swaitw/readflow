@@ -18,7 +18,7 @@ const initialState: OfflineArticlesState = {
   },
   selected: undefined,
   error: undefined,
-  loading: true,
+  loading: false,
 }
 
 // Thanks to Redux 4's much simpler typings, we can take away a lot of typings on the reducer side,
@@ -32,7 +32,11 @@ const reducer: Reducer<OfflineArticlesState> = (state = initialState, action) =>
       return { ...state, loading: false, error: undefined }
     }
     case OfflineArticlesActionTypes.SAVE_ERROR: {
-      return { ...state, loading: false, error: action.payload }
+      const error = action.payload
+      if (error) {
+        console.error(error)
+      }
+      return { ...state, loading: false, error }
     }
     case OfflineArticlesActionTypes.REMOVE_REQUEST: {
       return { ...state, loading: true }
@@ -63,7 +67,7 @@ const reducer: Reducer<OfflineArticlesState> = (state = initialState, action) =>
       const nbFetchedArticles = articles.entries.length
       console.log(nbFetchedArticles + ' article(s) fetched')
       if (data && query.afterCursor) {
-        articles.entries = articles.entries.concat(articles.entries)
+        articles.entries = data.articles.entries.concat(articles.entries)
       }
       return { ...state, loading: false, data: { articles }, error: undefined }
     }

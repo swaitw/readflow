@@ -1,19 +1,18 @@
-import React, { ReactNode, ReactType } from 'react'
+import React, { ElementType, PropsWithChildren } from 'react'
 import Ink from 'react-ink'
 
 import { classNames } from '../helpers'
 import styles from './Button.module.css'
-import Icon from './Icon'
+import { Icon } from '.'
 import { PropsOf } from './PropsOf'
 
-interface ButtonProps {
+interface ButtonProps extends PropsWithChildren {
   icon?: string
-  variant?: 'default' | 'primary' | 'danger'
+  variant?: 'default' | 'primary' | 'danger' | 'flat'
   disabled?: boolean
-  children: ReactNode
 }
 
-function Button<Tag extends ReactType = 'button'>(props: { as?: Tag } & ButtonProps & PropsOf<Tag>) {
+export function Button<Tag extends ElementType = 'button'>(props: { as?: Tag } & ButtonProps & PropsOf<Tag>) {
   const { as: Element = 'button', variant = 'default', disabled, icon, children, ...attrs } = props
   const className = classNames(styles.button, styles[variant])
 
@@ -25,5 +24,3 @@ function Button<Tag extends ReactType = 'button'>(props: { as?: Tag } & ButtonPr
     </Element>
   )
 }
-
-export default Button

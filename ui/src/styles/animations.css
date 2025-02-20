@@ -3,16 +3,16 @@
   margin-left: -256px;
 }
 
-.fold-enter.fold-enter-active {
+.fold-enter-active {
   margin-left: 0px;
   transition: margin 300ms ease-in;
 }
 
-.fold-leave {
+.fold-exit {
   margin-left: 0px;
 }
 
-.fold-leave.fold-leave-active {
+.fold-exit-active {
   margin-left: -256px;
   transition: margin 300ms ease-in;
 }
@@ -22,18 +22,18 @@
   opacity: 0;
 }
 
-.fade-enter.fade-enter-active {
+.fade-enter-active {
   bottom: 0;
   opacity: 1;
   transition: opacity 500ms ease-in, bottom 500ms ease-in;
 }
 
-.fade-leave {
+.fade-exit {
   bottom: 0;
   opacity: 1;
 }
 
-.fade-leave.fade-leave-active {
+.fade-exit-active {
   bottom: -10px;
   opacity: 0;
   transition: opacity 500ms ease-in, bottom 500ms ease-in;

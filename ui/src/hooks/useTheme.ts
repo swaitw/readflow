@@ -1,5 +1,5 @@
-import { useEffect, useContext } from 'react'
-import { LocalConfigurationContext, Theme } from '../context/LocalConfigurationContext'
+import { useEffect } from 'react'
+import { Theme, useLocalConfiguration } from '../contexts/LocalConfigurationContext'
 
 const getMql = () => window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)')
 
@@ -15,8 +15,8 @@ const onBrowserThemeChanged = (callback: (theme: Theme) => void) => {
   return () => mql && mql.removeListener(mqlListener)
 }
 
-export default () => {
-  const { localConfiguration } = useContext(LocalConfigurationContext)
+export const useTheme = () => {
+  const { localConfiguration } = useLocalConfiguration()
 
   const applyTheme = (theme: Theme) => {
     document.body.setAttribute('data-theme', theme)

@@ -1,26 +1,23 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
-import React, { ReactNode } from 'react'
+import React, { FC, PropsWithChildren } from 'react'
 import ReactModal from 'react-modal'
 
-import Button from './Button'
+import { Button, Panel } from '.'
 import styles from './Dialog.module.css'
-import Panel from './Panel'
 
-interface Props {
+interface Props extends PropsWithChildren {
   title: string
   confirmLabel?: string
-  children: ReactNode
   onConfirm: (e: any) => void
   onCancel?: (e: any) => void
 }
 
-export default ({ title, confirmLabel = 'ok', children, onConfirm, onCancel }: Props) => (
+export const ConfirmDialog: FC<Props> = ({ title, confirmLabel = 'ok', children, onConfirm, onCancel }) => (
   <ReactModal
     isOpen
     shouldCloseOnEsc
     shouldCloseOnOverlayClick
     shouldFocusAfterRender
-    appElement={document.getElementById('root')!}
     onRequestClose={onCancel}
     className={styles.dialog}
     overlayClassName={styles.overlay}

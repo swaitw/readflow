@@ -16,8 +16,11 @@ Cliquez sur le bouton `Add` pour ajouter un webhook entrant:
 
 Saisissez un alias pour votre webhook.
 
-L'alias peut être utilisé par le moteur de règle pour classer les articles venant par ce webhook.
+Vous pouvez personnaliser l'intégration des articles par ce webhook via un [script](scripting).
 
-Le service utilisant le webhook doit implémenter l'[API d'intégration](integration-api) de readflow:
+Le service utilisant le webhook doit implémenter l'[API d'intégration](integration-api) de readflow.
+
+> Le nombre de webhooks entrants est limité par un quota dépendant du plan utilisateur.
+> L'utilisation d'un webhook entrant est également contrôlée par une limitation dedit.
 
 {{%children style="h4" description="true"%}}

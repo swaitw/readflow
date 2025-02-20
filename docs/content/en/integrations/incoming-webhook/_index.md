@@ -16,8 +16,11 @@ Click the `Add` button to add an incoming webhook:
 
 Enter an alias for your webhook.
 
-The alias can be used by the rules engine to classify the articles coming through this webhook.
+You can customize the integration of the articles by this webhook via a [script](scripting).
 
-The service using the webhook must implement the [Integration API](integration-api):
+The service using the webhook must implement the [Integration API](integration-api).
+
+> The number of incoming webhook is limited by a quota depending on the user plan.
+> The use of an incoming webhook is also controlled by a rate limiting.
 
 {{%children style="h4" description="true"%}}

@@ -2,25 +2,28 @@ import gql from 'graphql-tag'
 import React from 'react'
 import { useQuery } from '@apollo/client'
 
-import Box from '../../components/Box'
-import Loader from '../../components/Loader'
-import { GetCurrentUser, GetCurrentUserResponse } from '../../components/UserInfos'
-import ErrorPanel from '../../error/ErrorPanel'
+import { Box, ErrorPanel, Loader } from '../../components'
 import { matchResponse } from '../../helpers'
+import { PlanManagement } from '../components'
+import { useCurrentUser } from '../../contexts'
 
 export const GetPlans = gql`
   query {
     plans {
       name
-      total_articles
-      total_categories
+      articles_limit
+      categories_limit
+      incoming_webhooks_limit
+      outgoing_webhooks_limit
     }
   }
 `
 interface Plan {
   name: string
-  total_articles: number
-  total_categories: number
+  articles_limit: number
+  categories_limit: number
+  incoming_webhooks_limit: number
+  outgoing_webhooks_limit: number
 }
 
 export interface GetPlansResponse {
@@ -32,35 +35,47 @@ interface UserPlanBoxProps {
 }
 
 const UserPlanBox = ({ plans }: UserPlanBoxProps) => {
-  const { data, error, loading } = useQuery<GetCurrentUserResponse>(GetCurrentUser)
+  const user = useCurrentUser()
 
-  const render = matchResponse<GetCurrentUserResponse>({
-    Loading: () => <Loader center />,
-    Error: (err) => <ErrorPanel>{err.message}</ErrorPanel>,
-    Data: (data) => {
-      let plan = plans.find((p) => p.name === data.me.plan)
-      if (!plan) {
-        plan = plans[0]
-      }
-      return (
-        <Box title={plan.name}>
-          <ul>
-            <li>
-              Max number of articles: <b>{plan.total_articles}</b>
-            </li>
-            <li>
-              Max number of categories: <b>{plan.total_categories}</b>
-            </li>
-          </ul>
-          <p>You can ask administrator to update your plan if needed.</p>
-        </Box>
-      )
-    },
-  })
-  return <>{render(loading, data, error)}</>
+  if (!user) {
+    return null
+  }
+
+  let plan = plans.find((p) => p.name === user.plan)
+  if (!plan) {
+    plan = plans[0]
+  }
+  return (
+    <Box title={plan.name}>
+      <ul>
+        <li>
+          Up to <b>{plan.articles_limit}</b> articles.
+        </li>
+        <li>
+          Up to <b>{plan.categories_limit}</b> categories.
+        </li>
+        <li>
+          Up to <b>{plan.incoming_webhooks_limit}</b> incoming webhooks.
+        </li>
+        <li>
+          Up to <b>{plan.outgoing_webhooks_limit}</b> outgoing webhooks.
+        </li>
+        {plan.name === 'premium' && (
+          <li>
+            RSS feeds with a dedicated&nbsp;
+            <a href={`https://feedpushr.nunux.org/${user.hashid}`} rel="noreferrer noopener" target="_blank">
+              Feedpushr instance
+            </a>
+            .
+          </li>
+        )}
+      </ul>
+      <PlanManagement user={user} />
+    </Box>
+  )
 }
 
-export default () => {
+const UserPlanSection = () => {
   const { data, error, loading } = useQuery<GetPlansResponse>(GetPlans)
 
   const render = matchResponse<GetPlansResponse>({
@@ -73,7 +88,7 @@ export default () => {
       return (
         <section>
           <header>
-            <h2>User plan</h2>
+            <h2 id="plan">User plan</h2>
           </header>
           <p>Your user plan defines quotas and usage limits.</p>
           <UserPlanBox plans={data.plans} />
@@ -84,3 +99,5 @@ export default () => {
 
   return <>{render(loading, data, error)}</>
 }
+
+export default UserPlanSection

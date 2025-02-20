@@ -1,85 +1,38 @@
-version: "3"
 
 services:
   ########################################
   # PostgreSQL
   ########################################
   db:
-    image: postgres:11
+    image: postgres:17
     restart: always
     environment:
       - POSTGRES_DB=${POSTGRES_DB:-readflow}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    networks:
-      - internal
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secret}
     volumes:
       - db-data:/var/lib/postgresql/data
-    labels:
-      - "traefik.enable=false"
-
-  #######################################
-  # Imaginary: Image proxy
-  #######################################
-  imaginary:
-    image: h2non/imaginary:latest
-    command: -enable-url-source -http-cache-ttl 172800
-    environment:
-      - MALLOC_ARENA_MAX=2
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "1m"
-    restart: always
-    networks:
-      - internal
-    labels:
-      - "traefik.enable=false"
 
   ########################################
-  # API
+  # readflow
   ########################################
-  api:
-    build: .
-    image: "ncarlier/readflow:latest"
+  readflow:
+    #build: .
+    image: "ncarlier/readflow:edge"
     restart: always
     depends_on:
       - db
-    networks:
-      - web
-      - internal
+    ports:
+      - "${PORT:-8080}:8080"
     environment:
-      - READFLOW_DB=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB:-readflow}?sslmode=disable
-      - READFLOW_BROKER=${EVENT_BROKER}
-      - READFLOW_SENTRY_DSN=${SENTRY_DSN}
-      - READFLOW_LISTEN_METRICS=:9090
-      - READFLOW_IMAGE_PROXY=http://imaginary:9000
-    labels:
-      - "traefik.port=8080"
-      - "traefik.frontend.rule=Host:api.${FQDN}"
-      - "traefik.docker.network=${GW_NETWORK_NAME}"
-
-#  ########################################
-#  # Webapp
-#  ########################################
-#  app:
-#    build: ./ui/
-#    image: "ncarlier/readflow-app:latest"
-#    restart: always
-#    networks:
-#      - web
-#      - internal
-#    labels:
-#      - "traefik.port=80"
-#      - "traefik.frontend.rule=Host:${FQDN}"
-#      - "traefik.docker.network=${GW_NETWORK_NAME}"
+      - READFLOW_DATABASE_URI=postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-secret}@db/${POSTGRES_DB:-readflow}?sslmode=disable
+      - READFLOW_AUTHN_METHOD=basic
+      - READFLOW_AUTHN_BASIC_HTPASSWD_FILE=file:///var/local/demo.htpasswd # "demo" as username and password
+    volumes:
+      - ${PWD}/var/demo.htpasswd:/var/local/demo.htpasswd
 
 networks:
-  web:
-    external:
-      name: "${GW_NETWORK_NAME}"
-  internal:
-    external: false
+  default:
 
 volumes:
   db-data:

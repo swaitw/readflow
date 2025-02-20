@@ -1,13 +1,11 @@
 import { History } from 'history'
-import React, { FormEvent, useCallback, useContext, useState } from 'react'
+import React, { FormEvent, useCallback, useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { Link } from 'react-router-dom'
 import { useFormState } from 'react-use-form-state'
 
-import Button from '../../../components/Button'
-import FormInputField from '../../../components/FormInputField'
-import { MessageContext } from '../../../context/MessageContext'
-import ErrorPanel from '../../../error/ErrorPanel'
+import { useMessage } from '../../../contexts'
+import { Button, ErrorPanel, FormCodeEditorField, FormInputField, HelpLink } from '../../../components'
 import { getGQLError, isValidForm } from '../../../helpers'
 import IncomingWebhookHelp from './IncomingWebhookHelp'
 import { IncomingWebhook, CreateOrUpdateIncomingWebhookRequest, CreateOrUpdateIncomingWebhookResponse } from './models'
@@ -15,6 +13,7 @@ import { CreateOrUpdateIncomingWebhook } from './queries'
 
 interface EditIncomingWebhookFormFields {
   alias: string
+  script: string
 }
 
 interface Props {
@@ -24,12 +23,12 @@ interface Props {
 
 export default ({ data, history }: Props) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [formState, { text }] = useFormState<EditIncomingWebhookFormFields>({ alias: data.alias })
+  const [formState, { text, textarea }] = useFormState<EditIncomingWebhookFormFields>(data)
   const [editIncomingWebhookMutation] = useMutation<
     CreateOrUpdateIncomingWebhookResponse,
     CreateOrUpdateIncomingWebhookRequest
   >(CreateOrUpdateIncomingWebhook)
-  const { showMessage } = useContext(MessageContext)
+  const { showMessage } = useMessage()
 
   const editIncomingWebhook = useCallback(
     async (incomingWebhook: CreateOrUpdateIncomingWebhookRequest) => {
@@ -53,8 +52,7 @@ export default ({ data, history }: Props) => {
         setErrorMessage('Please fill out correctly the mandatory fields.')
         return
       }
-      const { alias } = formState.values
-      editIncomingWebhook({ id: data.id, alias })
+      editIncomingWebhook({ id: data.id, ...formState.values })
     },
     [formState, data, editIncomingWebhook]
   )
@@ -68,7 +66,10 @@ export default ({ data, history }: Props) => {
         <IncomingWebhookHelp data={data} />
         {errorMessage != null && <ErrorPanel title="Unable to edit incoming webhook">{errorMessage}</ErrorPanel>}
         <form onSubmit={handleOnSubmit}>
-          <FormInputField label="Alias" {...text('alias')} error={formState.errors.alias} required autoFocus />
+          <FormInputField label="Alias" {...text('alias')} error={formState.errors.alias} required pattern=".*\S+.*" maxLength={32} autoFocus />
+          <FormCodeEditorField label="Script" language='script' {...textarea('script')} error={formState.errors.script} required pattern=".*\S+.*" maxLength={1024} >
+            <HelpLink href="https://docs.readflow.app/en/integrations/incoming-webhook/scripting/">View script syntax</HelpLink>
+          </FormCodeEditorField>
         </form>
       </section>
       <footer>

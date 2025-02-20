@@ -1,8 +1,11 @@
+export type Provider = 'generic' | 'keeper' | 'pocket' |  's3' | 'shaarli' | 'wallabag'
+
 export interface OutgoingWebhook {
   id: number
   alias: string
-  provider: string
+  provider: Provider
   config: string
+  secrets: string[]
   is_default: boolean
   created_at?: string
   updated_at?: string
@@ -19,8 +22,9 @@ export interface GetOutgoingWebhookResponse {
 export interface CreateOrUpdateOutgoingWebhookRequest {
   id?: number
   alias: string
-  provider: string
+  provider: Provider
   config: string
+  secrets: string
   is_default: boolean
 }
 

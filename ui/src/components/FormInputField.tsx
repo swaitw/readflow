@@ -6,6 +6,8 @@ import { classNames } from '../helpers'
 interface Props {
   label: string
   required?: boolean
+  pattern?: string
+  maxLength?: number
   readOnly?: boolean
   autoFocus?: boolean
   error?: string
@@ -14,7 +16,7 @@ interface Props {
 
 type AllProps = Props & BaseInputProps<any>
 
-export default forwardRef((props: AllProps, ref: Ref<any>) => {
+export const FormInputField = forwardRef((props: AllProps, ref: Ref<any>) => {
   const { error, label, children, ...rest } = { ...props, ref }
 
   if (rest.type === 'checkbox') {

@@ -1,25 +1,37 @@
-import React, { useCallback, useContext, useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { NetworkStatus, useQuery } from '@apollo/client'
 import { RouteComponentProps } from 'react-router'
 
 import { Category } from '../categories/models'
-import Loader from '../components/Loader'
-import Panel from '../components/Panel'
-import { LocalConfiguration, LocalConfigurationContext } from '../context/LocalConfigurationContext'
-import ErrorPanel from '../error/ErrorPanel'
+import { LocalConfiguration, useLocalConfiguration } from '../contexts/LocalConfigurationContext'
+import { Center, ErrorPanel, Loader, Panel } from '../components'
 import { getURLParam, matchResponse } from '../helpers'
-import Appbar from '../layout/Appbar'
-import Page from '../layout/Page'
-import ArticleList from './components/ArticleList'
-import ArticlesPageMenu from './components/ArticlesPageMenu'
-import NewArticlesAvailable from './components/NewArticlesAvailable'
+import { Appbar, Page } from '../layout'
+import { ArticleList, ArticlesPageMenu, NewArticlesAvailable, NoArticleBg, Search } from './components'
 import { ArticleStatus, GetArticlesRequest, GetArticlesResponse } from './models'
 import { GetArticles } from './queries'
 import { useMedia } from '../hooks'
-import Search from './components/Search'
-import Center from '../components/Center'
 
-type Variant = 'unread' | 'history' | 'starred'
+type Variant = 'inbox' | 'to_read' | 'history' | 'starred'
+
+const variants = {
+  inbox: {
+    emptyLabel: 'your inbox is full of air',
+    getTitle: (nb: number) => `${nb} article${nb > 1 ? 's' : ''} received`,
+  },
+  to_read: {
+    emptyLabel: 'nothing more to read, time to relax',
+    getTitle: (nb: number) => `${nb} article${nb > 1 ? 's' : ''} to read`,
+  },
+  history: {
+    emptyLabel: 'your reading history is all clean',
+    getTitle: (nb: number) => `${nb} read article${nb > 1 ? 's' : ''}`,
+  },
+  starred: {
+    emptyLabel: 'only the sky is full of stars',
+    getTitle: (nb: number) => `${nb} stared article${nb > 1 ? 's' : ''}`,
+  },
+}
 
 interface Props {
   variant: Variant
@@ -33,8 +45,8 @@ const buildArticlesRequest = (variant: Variant, props: AllProps, localConfig: Lo
   const req: GetArticlesRequest = {
     limit: getURLParam(params, 'limit', localConfig.limit),
     sortBy: null,
-    sortOrder: getURLParam(params, 'order', localConfig.display.unread.order),
-    status: 'unread',
+    sortOrder: getURLParam(params, 'order', localConfig.display[variant].order),
+    status: null,
     starred: null,
     category: null,
     afterCursor: null,
@@ -43,21 +55,23 @@ const buildArticlesRequest = (variant: Variant, props: AllProps, localConfig: Lo
   switch (variant) {
     case 'history':
       req.status = 'read'
-      req.sortOrder = getURLParam(params, 'order', localConfig.display.history.order)
+      req.starred = false
       break
     case 'starred':
-      req.status = null
       req.starred = true
-      req.sortOrder = getURLParam(params, 'order', localConfig.display.starred.order)
       req.sortBy = getURLParam(params, 'by', localConfig.display.starred.by)
       break
-    case 'unread':
+    default:
+      req.status = getURLParam<ArticleStatus>(params, 'status', variant)
       if (category && category.id) {
         req.category = category.id
-        req.status = getURLParam<ArticleStatus>(params, 'status', 'unread')
-        const sortKey = `cat_${category.id}`
-        if (Object.prototype.hasOwnProperty.call(localConfig.display, sortKey)) {
-          req.sortOrder = getURLParam(params, 'order', localConfig.display[sortKey].order)
+        const configKey = `cat_${category.id}`
+        if (Object.prototype.hasOwnProperty.call(localConfig.display, configKey)) {
+          req.sortOrder = getURLParam(params, 'order', localConfig.display[configKey].order)
+        }
+        if (getURLParam(params, 'starred', '' as string) === 'true') {
+          req.starred = true
+          req.status = null
         }
       }
   }
@@ -75,17 +89,6 @@ const getDisplayMode = (variant: Variant, localConfig: LocalConfiguration, categ
   return localConfig.display[variant].mode
 }
 
-const buildTitle = (status: string | null, category?: Category) => {
-  let title = ''
-  if (status) {
-    title = status === 'unread' ? 'to read' : 'read'
-  }
-  if (category) {
-    title = title + ' in "' + category.title + '"'
-  }
-  return title
-}
-
 const computeTotalArticles = (data: GetArticlesResponse, status: string | null) => {
   let delta = 0
   if (status) {
@@ -94,23 +97,12 @@ const computeTotalArticles = (data: GetArticlesResponse, status: string | null) 
   return data.articles.totalCount - delta
 }
 
-const EmptyMessage = ({ variant }: { variant: Variant }) => {
-  switch (variant) {
-    case 'starred':
-      return 'no starred article'
-    case 'history':
-      return 'history is empty'
-    default:
-      return 'no article to read'
-  }
-}
-
 type AllProps = Props & RouteComponentProps
 
 export default (props: AllProps) => {
   const { variant, category } = props
 
-  const { localConfiguration } = useContext(LocalConfigurationContext)
+  const { localConfiguration } = useLocalConfiguration()
   const [req] = useState<GetArticlesRequest>(buildArticlesRequest(variant, props, localConfiguration))
   const { data, error, fetchMore, refetch, networkStatus } = useQuery<GetArticlesResponse>(GetArticles, {
     variables: req,
@@ -144,7 +136,7 @@ export default (props: AllProps) => {
   }, [data, fetchMore, req])
 
   const refresh = useCallback(async () => {
-    console.log('re-fetching articles...')
+    console.log('re-fetching articles ...')
     const { errors } = await refetch()
     if (errors) {
       console.error(errors)
@@ -170,12 +162,12 @@ export default (props: AllProps) => {
       }
       return (
         <>
-          {variant === 'unread' && (
+          {variant === 'inbox' && (
             <NewArticlesAvailable current={computeTotalArticles(d, req.status)} category={category} refresh={refresh} />
           )}
           <ArticleList
             articles={entries}
-            emptyMessage={EmptyMessage({ variant })}
+            empty={<NoArticleBg name={variant} title={variants[variant].emptyLabel} />}
             hasMore={d.articles.hasNext}
             refetch={refetch}
             swipeable={isMobileDisplay && variant !== 'starred'}
@@ -188,26 +180,26 @@ export default (props: AllProps) => {
   })
 
   // Build title
-  let title = buildTitle(req.status, category)
-  if (data && data.articles) {
-    const totalCount = computeTotalArticles(data, req.status)
-    const plural = totalCount > 1 ? ' articles ' : ' article '
-    title = totalCount + plural + title
-  } else title = ' '
+  const nbArticles = data && data.articles ? computeTotalArticles(data, req.status) : 0
+  let variantKey = variant
+  if (category && req.status === 'read') variantKey = 'history'
+  if (category && req.status === 'to_read') variantKey = 'to_read'
+  if (category && req.starred) variantKey = 'starred'
+  const title = variants[variantKey].getTitle(nbArticles) + (category ? ` in "${category?.title}"` : '')
 
-  const $actions = (
-    <>
+  const $header = (
+    <Appbar title={title}>
       <Search req={req} />
       <ArticlesPageMenu refresh={refresh} req={req} variant={variant} />
-    </>
+    </Appbar>
   )
 
   const loading = networkStatus === NetworkStatus.loading
   const refetching = networkStatus === NetworkStatus.refetch
 
   return (
-    <Page title={title} header={<Appbar title={title} actions={$actions} />} scrollToTop>
-      {refetching && <Loader center />}
+    <Page title={title} header={$header} scrollToTop>
+      {refetching && <Loader style={{position: 'fixed', right: '2em', top: '3em'}} />}
       {render(loading, data, error)}
     </Page>
   )

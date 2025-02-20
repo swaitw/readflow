@@ -3,12 +3,10 @@ import React from 'react'
 import ReactModal from 'react-modal'
 import { useModal } from 'react-modal-hook'
 
-import ButtonIcon from '../../components/ButtonIcon'
+import { ButtonIcon, Logo, Panel } from '../../components'
 import dialogStyles from '../../components/Dialog.module.css'
-import Panel from '../../components/Panel'
-import { VERSION } from '../../constants'
+import version from '../../version'
 import styles from './AboutButton.module.css'
-import logo from './logo.svg'
 
 interface Props {
   closeHandler: () => void
@@ -18,9 +16,9 @@ const AboutPanel = ({ closeHandler }: Props) => (
   <Panel className={styles.about}>
     <ButtonIcon title="close" onClick={closeHandler} icon="close" />
     <h1>
-      <img src={logo} alt="logo" />
+      <Logo name="readflow" />
     </h1>
-    <span>({VERSION})</span>
+    <span>({version})</span>
     <p>Read your Internet article flow in one place with complete peace of mind and freedom.</p>
     <ul>
       <li>
@@ -42,14 +40,13 @@ const AboutPanel = ({ closeHandler }: Props) => (
   </Panel>
 )
 
-export default () => {
+const AboutButton = () => {
   const [showAboutModal, hideAboutModal] = useModal(() => (
     <ReactModal
       isOpen
       shouldCloseOnEsc
       shouldCloseOnOverlayClick
       shouldFocusAfterRender
-      appElement={document.getElementById('root')!}
       onRequestClose={hideAboutModal}
       className={dialogStyles.dialog}
       overlayClassName={dialogStyles.overlay}
@@ -60,3 +57,5 @@ export default () => {
 
   return <ButtonIcon title="About" onClick={showAboutModal} icon="info" />
 }
+
+export default AboutButton

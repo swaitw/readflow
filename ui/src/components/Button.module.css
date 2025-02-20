@@ -1,6 +1,7 @@
 
 .button {
   composes: button from global;
+  display: inline-block;
   color: var(--button-text-color);
   background-color: var(--button-default-color);
 }
@@ -45,6 +46,12 @@
 
 .warning:hover {
   background-color: var(--button-warning-hover-color);
+}
+
+.flat {
+  background-color: transparent;
+  box-shadow: none;
+  vertical-align: text-top;
 }
 
 .button > i {

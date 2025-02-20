@@ -11,52 +11,66 @@ Read your Internet article flow in one place with complete peace of mind and fre
 ## Features
 
 - Read articles from anywhere in one place.
-- Save articles for offline reading.
-- Create categories and classify new articles automatically thanks to a customizable rule engine.
-- External service integration thanks to incoming and outgoing webhooks ([Keeper][keeper], [Pocket][pocket], [Wallabag][wallabag], custom...).
-- Receive notifications when new articles are to be read.
-- Good user experience on mobile devices.
-- No tracking and no publicity.
+- Save articles for offline reading or locally on you disk in the format you want (HTML, PDF, EPUB, ZIP, ...).
+- Create categories and classify new articles.
+- Customize article integration with a scripting engine.
+- Link with external services thanks to incoming and outgoing webhooks (Newsletter, [RSS][feedpushr], [Keeper][keeper], [Pocket][pocket], [Shaarli][shaarli], [Wallabag][wallabag], S3 bucket, and more...).
+- Receive notifications when new articles are available.
+- Enjoy the same user experience on mobile as on desktop thanks to [Progressive Web App][pwa] support.
+- And all this without ads and trackers.
 
 ## Installation
 
-Run the following command:
+Using Go compiler:
 
 ```bash
-$ go get -v github.com/ncarlier/readflow
+go install -v github.com/ncarlier/readflow@latest
 ```
 
-**Or** download the binary regarding your architecture:
+**Or** using pre-compiled binary:
 
 ```bash
-$ curl -sf https://gobinaries.com/ncarlier/readflow | sh
-$ # or
-$ curl -s https://raw.githubusercontent.com/ncarlier/readflow/master/install.sh | bash
+curl -sf https://gobinaries.com/ncarlier/readflow | sh
+# or
+curl -s https://raw.githubusercontent.com/ncarlier/readflow/master/install.sh | bash
 ```
 
-**Or** use Docker:
+**Or** using Docker:
 
 ```bash
-$ docker run -d --name=readflow ncarlier/readflow
+docker run -it --rm \
+  -p 8080:8080 \
+  -e READFLOW_DATABASE_URI=<YOUR POSTGERSQL CONNECTION STRING> \
+  ncarlier/readflow:edge
 ```
+
+**Or** using Docker Compose:
+
+```bash
+docker compose up
+```
+
+> The default Docker Compose file mounts a passwd file with a `demo` user having `demo` as password.
 
 ## Configuration
 
-Readflow can be configured by using command line parameters or by setting environment variables.
+Readflow configuration is a TOML file that you can specify using the `-c` command line parameter or by setting the `READFLOW_CONFIG` environment variable.
 
-Type `readflow -h` to display all parameters and related environment variables.
+You can initialize a configuration file example by using the `init-config -f config.toml` command.
 
-All configuration variables are described in [etc/default/readflow.env](./etc/default/readflow.env) file.
+A configuration file example can be found [here](./internal/config/defaults.toml).
+
+Type `readflow --help` to display available commands.
 
 ## UI
 
-You can access Web UI on http://localhost:8080/ui
+You can access Web UI on http://localhost:8080
 
 ![Screenshot](screenshot.png)
 
 ## Documentation
 
-The documentation can be found here: https://about.readflow.app/docs
+The documentation can be found here: https://docs.readflow.app
 
 ## GraphQL API
 
@@ -90,7 +104,13 @@ These amazing people have sponsored this project:
 
 ***
 
-## License
+## Licenses
+
+Readflow artworks except the logo are under the [Licence Creative Commons Attribution-NonCommercial-NoDerivatives 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode).
+Attribution to [Maxime Belloche](https://www.instagram.com/bouloche61/)
+
+Avatar artworks are under the [License Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/legalcode).
+Attribution to [David Revoy](https://www.davidrevoy.com/)
 
 Readflow is provided under the [GNU Affero General Public License Version 3 (AGPLv3)](https://github.com/ncarlier/readflow/blob/master/LICENSE).
 
@@ -115,6 +135,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>
 
 ---
 
+[pwa]: https://web.dev/progressive-web-apps
+[feedpushr]: https://github.com/ncarlier/feedpushr
 [keeper]: https://keeper.nunux.org
 [wallabag]: https://www.wallabag.org
+[shaarli]: https://github.com/shaarli/Shaarli
 [pocket]: https://getpocket.com/

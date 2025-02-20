@@ -1,22 +1,21 @@
-import React, { ReactNode, useContext } from 'react'
+import React, { FC, PropsWithChildren } from 'react'
 
-import ButtonIcon from '../components/ButtonIcon'
-import { NavbarContext } from '../context/NavbarContext'
+import { ButtonIcon } from '../components'
+import { useNavbar } from '../contexts/NavbarContext'
 import styles from './Appbar.module.css'
 
-interface Props {
+interface Props extends PropsWithChildren {
   title?: string
-  actions?: ReactNode
 }
 
-export default ({ title, actions }: Props) => {
-  const navbar = useContext(NavbarContext)
+export const Appbar: FC<Props> = ({ title, children }) => {
+  const navbar = useNavbar()
 
   return (
     <div className={styles.appBar}>
       <ButtonIcon id="appbar-menu" icon="menu" onClick={() => (navbar.opened ? navbar.close() : navbar.open())} />
       <h1>{title}</h1>
-      {actions}
+      {children}
     </div>
   )
 }

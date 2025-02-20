@@ -1,26 +1,22 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { useQuery } from '@apollo/client'
 import { RouteComponentProps, withRouter } from 'react-router'
 import { Link } from 'react-router-dom'
 
 import { GetCategoriesResponse } from '../categories/models'
 import { GetCategories } from '../categories/queries'
-import LinkIcon from '../components/LinkIcon'
-import Loader from '../components/Loader'
-import NetworkStatus from '../components/NetworkStatus'
-import Offline from '../components/Offline'
-import UserInfos from '../components/UserInfos'
-import { NavbarContext } from '../context/NavbarContext'
+import { Loader, LinkIcon, NetworkStatus, Offline, UserInfos } from '../components'
 import { matchResponse } from '../helpers'
-import logo from './logo_header.svg'
+import { ReactComponent as Logo } from './logo_header.min.svg'
 import styles from './Navbar.module.css'
-import AddArticleLink from '../articles/components/AddArticleLink'
+import { AddArticleLink } from '../articles/components'
 import { Article } from '../articles/models'
+import { useNavbar } from '../contexts'
 
-export default withRouter(({ location, history }: RouteComponentProps) => {
+export const Navbar = withRouter(({ location, history }: RouteComponentProps) => {
   const { pathname } = location
   const { data, error, loading } = useQuery<GetCategoriesResponse>(GetCategories)
-  const navbar = useContext(NavbarContext)
+  const navbar = useNavbar()
 
   const isCategoryActive = (id?: number) => {
     const _path = `/categories/${id}`
@@ -34,7 +30,7 @@ export default withRouter(({ location, history }: RouteComponentProps) => {
   }
 
   const redirectToNewArticle = (article: Article) => {
-    history.push(`/unread/${article.id}`)
+    history.push(`/inbox/${article.id}`)
     menuAutoClose()
   }
 
@@ -52,7 +48,7 @@ export default withRouter(({ location, history }: RouteComponentProps) => {
                 active={isCategoryActive(category.id)}
                 icon="bookmark"
                 onClick={menuAutoClose}
-                badge={category.unread}
+                badge={category.inbox}
               >
                 {category.title}
               </LinkIcon>
@@ -67,11 +63,9 @@ export default withRouter(({ location, history }: RouteComponentProps) => {
       <ul>
         <li>
           <h1>
-            <img src={logo} alt="readflow" />
+            <Logo />
           </h1>
-          <NetworkStatus status="online">
-            <UserInfos />
-          </NetworkStatus>
+          <UserInfos />
           <NetworkStatus status="offline">
             <Offline />
           </NetworkStatus>
@@ -83,13 +77,37 @@ export default withRouter(({ location, history }: RouteComponentProps) => {
               <li>
                 <LinkIcon
                   as={Link}
-                  to="/unread"
-                  icon="menu_book"
-                  badge={data && data.categories && data.categories._all}
-                  active={pathname.startsWith('/unread')}
+                  to="/inbox"
+                  icon="inbox"
+                  badge={data && data.categories && data.categories._inbox}
+                  active={pathname.startsWith('/inbox')}
                   onClick={menuAutoClose}
                 >
-                  Articles to read
+                  Inbox
+                </LinkIcon>
+              </li>
+              <li>
+                <LinkIcon
+                  as={Link}
+                  to="/to_read"
+                  icon="book"
+                  badge={data && data.categories && data.categories._to_read}
+                  active={pathname.startsWith('/to_read')}
+                  onClick={menuAutoClose}
+                >
+                  To read
+                </LinkIcon>
+              </li>
+              <li>
+                <LinkIcon
+                  as={Link}
+                  to="/starred"
+                  icon="star"
+                  badge={data && data.categories && data.categories._starred}
+                  active={pathname.startsWith('/starred')}
+                  onClick={menuAutoClose}
+                >
+                  Starred
                 </LinkIcon>
               </li>
             </NetworkStatus>
@@ -101,22 +119,10 @@ export default withRouter(({ location, history }: RouteComponentProps) => {
                 active={pathname.startsWith('/offline')}
                 onClick={menuAutoClose}
               >
-                Offline articles
+                Offline
               </LinkIcon>
             </li>
             <NetworkStatus status="online">
-              <li>
-                <LinkIcon
-                  as={Link}
-                  to="/starred"
-                  icon="star"
-                  badge={data && data.categories && data.categories._starred}
-                  active={pathname.startsWith('/starred')}
-                  onClick={menuAutoClose}
-                >
-                  Starred articles
-                </LinkIcon>
-              </li>
               <li>
                 <LinkIcon
                   as={Link}

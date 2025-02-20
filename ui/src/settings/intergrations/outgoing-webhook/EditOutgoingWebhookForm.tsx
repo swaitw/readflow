@@ -1,27 +1,25 @@
-/* eslint-disable @typescript-eslint/camelcase */
 import { History } from 'history'
-import React, { FormEvent, useCallback, useContext, useState } from 'react'
+import React, { FormEvent, useCallback, useState } from 'react'
 import { useMutation } from '@apollo/client'
 import { Link } from 'react-router-dom'
 import { useFormState } from 'react-use-form-state'
 
-import Button from '../../../components/Button'
-import FormCheckboxField from '../../../components/FormCheckboxField'
-import FormInputField from '../../../components/FormInputField'
-import FormSelectField from '../../../components/FormSelectField'
-import { MessageContext } from '../../../context/MessageContext'
-import ErrorPanel from '../../../error/ErrorPanel'
+import { useMessage } from '../../../contexts'
+import { Button, ErrorPanel, FormCheckboxField, FormInputField, FormSelectField } from '../../../components'
 import { getGQLError, isValidForm } from '../../../helpers'
-import { OutgoingWebhook, CreateOrUpdateOutgoingWebhookResponse, CreateOrUpdateOutgoingWebhookRequest } from './models'
-import KeeperConfigForm from './providers/KeeperConfigForm'
+import {
+  OutgoingWebhook,
+  CreateOrUpdateOutgoingWebhookResponse,
+  CreateOrUpdateOutgoingWebhookRequest,
+  Provider,
+} from './models'
+import providers from './providers'
 import { CreateOrUpdateOutgoingWebhook } from './queries'
-import WallabagConfigForm from './providers/WallabagConfigForm'
-import GenericConfigForm from './providers/GenericConfigForm'
-import PocketConfigForm from './providers/PocketConfigForm'
+import OutgoingWebhookHelp from './OutgoingWebhookHelp'
 
 interface EditOutgoingWebhookFormFields {
   alias: string
-  provider: string
+  provider: Provider
   is_default: boolean
 }
 
@@ -31,7 +29,10 @@ interface Props {
 }
 
 export default ({ data, history }: Props) => {
-  const [config, setConfig] = useState<any>(JSON.parse(data.config))
+  const [config, setConfig] = useState<any>({
+    ...(data.secrets.reduce((a, v) => ({ ...a, [v]: ''}), {})),
+    ...JSON.parse(data.config),
+  })
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [formState, { text, select, checkbox }] = useFormState<EditOutgoingWebhookFormFields>({
     alias: data.alias,
@@ -42,7 +43,7 @@ export default ({ data, history }: Props) => {
     CreateOrUpdateOutgoingWebhookResponse,
     CreateOrUpdateOutgoingWebhookRequest
   >(CreateOrUpdateOutgoingWebhook)
-  const { showMessage } = useContext(MessageContext)
+  const { showMessage } = useMessage()
 
   const editOutgoingWebhook = useCallback(
     async (webhook: CreateOrUpdateOutgoingWebhookRequest) => {
@@ -67,10 +68,13 @@ export default ({ data, history }: Props) => {
         return
       }
       const { alias, provider, is_default } = formState.values
-      editOutgoingWebhook({ id: data.id, alias, provider, is_default, config: JSON.stringify(config) })
+      const [conf, secrets] = providers[provider].marshal(config)
+      editOutgoingWebhook({ id: data.id, alias, provider, is_default, config: conf, secrets })
     },
     [data, formState, config, editOutgoingWebhook]
   )
+  
+  const ProviderConfigForm = providers[formState.values.provider].form
 
   return (
     <>
@@ -78,19 +82,14 @@ export default ({ data, history }: Props) => {
         <h1>Edit outgoing webhook #{data.id}</h1>
       </header>
       <section>
+        <OutgoingWebhookHelp />
         {errorMessage != null && <ErrorPanel title="Unable to edit outgoing webhook">{errorMessage}</ErrorPanel>}
         <form onSubmit={handleOnSubmit}>
-          <FormInputField label="Alias" {...text('alias')} error={formState.errors.alias} required autoFocus />
+          <FormInputField label="Alias" {...text('alias')} error={formState.errors.alias} required pattern=".*\S+.*" maxLength={32} autoFocus />
           <FormSelectField label="Provider" {...select('provider')}>
-            <option value="generic">Generic webhook</option>
-            <option value="keeper">Keeper</option>
-            <option value="wallabag">Wallabag</option>
-            <option value="pocket">Pocket</option>
+            {Object.entries(providers).map(([key, p]) => <option key={`provider-${key}`} value={key}>{p.label}</option>)}
           </FormSelectField>
-          {formState.values.provider === 'generic' && <GenericConfigForm onChange={setConfig} config={config} />}
-          {formState.values.provider === 'keeper' && <KeeperConfigForm onChange={setConfig} config={config} />}
-          {formState.values.provider === 'wallabag' && <WallabagConfigForm onChange={setConfig} config={config} />}
-          {formState.values.provider === 'pocket' && <PocketConfigForm onChange={setConfig} config={config} />}
+          <ProviderConfigForm onChange={setConfig} config={config} />
           <FormCheckboxField label="To use by default" {...checkbox('is_default')} />
         </form>
       </section>

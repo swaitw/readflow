@@ -6,6 +6,7 @@ export const GetIncomingWebhooks = gql`
       id
       alias
       token
+      script
       last_usage_at
       created_at
       updated_at
@@ -19,6 +20,8 @@ export const GetIncomingWebhook = gql`
       id
       alias
       token
+      email
+      script
       last_usage_at
       created_at
       updated_at
@@ -33,11 +36,13 @@ export const DeleteIncomingWebhooks = gql`
 `
 
 export const CreateOrUpdateIncomingWebhook = gql`
-  mutation createOrUpdateIncomingWebhook($id: ID, $alias: String!) {
-    createOrUpdateIncomingWebhook(id: $id, alias: $alias) {
+  mutation createOrUpdateIncomingWebhook($id: ID, $alias: String!, $script: String!) {
+    createOrUpdateIncomingWebhook(id: $id, alias: $alias, script: $script) {
       id
       alias
       token
+      email
+      script
       last_usage_at
       created_at
       updated_at

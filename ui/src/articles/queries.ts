@@ -30,6 +30,11 @@ export const GetArticles = gql`
         text
         url
         image
+        thumbhash
+        thumbnails {
+          size
+          hash
+        }
         status
         stars
         category {
@@ -70,6 +75,11 @@ export const GetFullArticle = gql`
       html
       url
       image
+      thumbhash
+      thumbnails {
+        size
+        hash
+      }
       status
       stars
       category {
@@ -82,19 +92,46 @@ export const GetFullArticle = gql`
 `
 
 export const UpdateArticle = gql`
-  mutation updateArticle($id: ID!, $status: status, $stars: Int) {
-    updateArticle(id: $id, status: $status, stars: $stars) {
+  mutation updateArticle($id: ID!, $title: String, $text: String, $category_id: ID, $status: status, $stars: Int) {
+    updateArticle(id: $id, title: $title, text: $text, category_id: $category_id, status: $status, stars: $stars) {
       article {
         id
+        title
+        text
         status
         stars
         category {
           id
-          unread
+          inbox
         }
         updated_at
       }
-      _all
+      _inbox
+      _to_read
+      _starred
+    }
+  }
+`
+
+export const UpdateFullArticle = gql`
+  mutation updateArticle($id: ID!, $title: String, $text: String, $category_id: ID, $status: status, $stars: Int, $refresh: Boolean) {
+    updateArticle(id: $id, title: $title, text: $text, category_id: $category_id, status: $status, stars: $stars, refresh: $refresh) {
+      article {
+        id
+        title
+        text
+        html
+        url
+        status
+        stars
+        category {
+          id
+          inbox
+        }
+        updated_at
+      }
+      _inbox
+      _to_read
       _starred
     }
   }
@@ -102,17 +139,20 @@ export const UpdateArticle = gql`
 
 export const SendArticleToOutgoingWebhook = gql`
   mutation sendArticleToOutgoingWebhook($id: ID!, $alias: String!) {
-    sendArticleToOutgoingWebhook(id: $id, alias: $alias)
+    sendArticleToOutgoingWebhook(id: $id, alias: $alias) {
+      url
+      text
+    }
   }
 `
 
 export const MarkAllArticlesAsRead = gql`
-  mutation markAllArticlesAsRead($category: ID) {
-    markAllArticlesAsRead(category: $category) {
-      _all
+  mutation markAllArticlesAsRead($status: status!, $category: ID) {
+    markAllArticlesAsRead(status: $status, category: $category) {
+      _inbox
       entries {
         id
-        unread
+        inbox
       }
     }
   }
@@ -126,11 +166,15 @@ export const AddNewArticle = gql`
       html
       url
       image
+      thumbnails {
+        size
+        hash
+      }
       status
       stars
       category {
         id
-        unread
+        inbox
       }
       created_at
     }
@@ -139,7 +183,7 @@ export const AddNewArticle = gql`
 
 export const GetNbNewArticles = gql`
   query articles($category: Int) {
-    articles(limit: 1, status: unread, category: $category) {
+    articles(limit: 1, status: inbox, category: $category) {
       totalCount
     }
   }

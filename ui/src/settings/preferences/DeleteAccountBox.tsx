@@ -1,14 +1,12 @@
 import gql from 'graphql-tag'
-import React, { useContext } from 'react'
+import React from 'react'
 import { useMutation } from '@apollo/client'
 import { useModal } from 'react-modal-hook'
 
-import auth from '../../auth'
-import Box from '../../components/Box'
-import Button from '../../components/Button'
-import ConfirmDialog from '../../components/ConfirmDialog'
-import { MessageContext } from '../../context/MessageContext'
+import { Box, Button, ConfirmDialog } from '../../components'
+import { useMessage } from '../../contexts'
 import { getGQLError } from '../../helpers'
+import { useAuth } from '../../auth/AuthProvider'
 
 const DeleteAccount = gql`
   mutation {
@@ -20,8 +18,9 @@ interface DeleteAccountResponse {
   deleteAccount: boolean
 }
 
-export default () => {
-  const { showErrorMessage } = useContext(MessageContext)
+const DeleteAccountBox = () => {
+  const auth = useAuth()
+  const { showErrorMessage } = useMessage()
   const [deleteAccountMutation] = useMutation<DeleteAccountResponse>(DeleteAccount)
   const deleteAccount = async () => {
     try {
@@ -57,3 +56,5 @@ export default () => {
     </Box>
   )
 }
+
+export default DeleteAccountBox

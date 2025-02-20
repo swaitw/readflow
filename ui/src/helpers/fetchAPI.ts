@@ -1,24 +1,25 @@
-import authService from '../auth'
-import { API_BASE_URL } from '../constants'
+import { User } from 'oidc-client-ts'
+import { API_BASE_URL } from '../config'
 
-export default async (uri: string, params: any = {}, init: RequestInit) => {
-  let user = await authService.getUser()
-  if (user === null) {
-    throw new Error('user not logged in')
-  }
-  if (user.expired) {
-    user = await authService.renewToken()
-  }
-  if (user.access_token) {
+const apiBaseUrl = API_BASE_URL.startsWith('/') || API_BASE_URL === '' ? document.location.origin + API_BASE_URL : API_BASE_URL
+
+export const getAPIURL = (path?: string) => path ? `${apiBaseUrl}${path}` : apiBaseUrl
+
+export const withCredentials = (user: User | null, init?: HeadersInit): HeadersInit | undefined => {
+  if (user && user.access_token) {
     const headers = new Headers({ Authorization: 'Bearer ' + user.access_token })
-    if (init.headers !== undefined) {
-      ;(init.headers as Headers).forEach((entry) => {
+    if (init !== undefined) {
+      ;(init as Headers).forEach((entry) => {
         headers.set(entry[0], entry[1])
       })
     }
-    init.headers = headers
+    init = headers
   }
-  const url = new URL(`${API_BASE_URL}${uri}`)
+  return init
+}
+
+export const fetchAPI = async (uri: string, params: any = {}, init: RequestInit = {}) => {
+  const url = new URL(getAPIURL(uri))
   if (params) {
     Object.keys(params).forEach((key) => url.searchParams.append(key, params[key]))
   }

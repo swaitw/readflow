@@ -1,26 +1,46 @@
-import React from 'react'
+import React, { FC, ImgHTMLAttributes, useEffect, useState } from 'react'
 
-import { API_BASE_URL } from '../../constants'
-import { useMedia } from '../../hooks'
+import { Article, ArticleThumbnail } from '../models'
+import { getAPIURL } from '../../helpers'
+import { LazyImage } from '../../components'
 
-interface Props {
-  src: string
-  alt?: string
+const getThumbnailURL = (thumbnail: ArticleThumbnail, src: string) => `${getAPIURL()}/img/${thumbnail.hash}/resize:fit:${thumbnail.size}/${btoa(src)}`
+
+const getThumbnailAttributes = (article: Article) => {
+  const attrs :ImgHTMLAttributes<HTMLImageElement> = {}
+  if (!article.thumbnails || article.thumbnails.length == 0) {
+    return attrs
+  }
+
+  const thumbnails = [...article.thumbnails].sort((a, b) => parseInt(b.size) - parseInt(a.size))
+  const sizes = thumbnails.map(thumb => `${thumb.size}px`)
+  attrs.sizes = `(max-width: ${sizes[0]}) ${sizes.join(', ')}`
+  attrs.srcSet = thumbnails.reverse().map(thumb => `${getThumbnailURL(thumb, article.image)} ${thumb.size}w`).join(',')
+  return attrs
 }
 
-const proxifyImageURL = (url: string, width: number) =>
-  `${API_BASE_URL}/img?url=${encodeURIComponent(url)}&width=${width}`
+interface Props {
+  article: Article
+}
 
-export default ({ src, alt = '' }: Props) => {
-  const mobileDisplay = useMedia('(max-width: 767px)')
+export const ArticleImage: FC<Props> = ({ article }) => {
+  const [attrs, setAttrs] = useState<ImgHTMLAttributes<HTMLImageElement>>({})
+  useEffect(() => {
+    if (article.image && article.image.match(/^https?:\/\//)) {
+      try {
+        setAttrs(getThumbnailAttributes(article))
+      } catch (err) {
+        console.error('unable to get article thumbnail attributes', article, err)
+      }
+    }
+  }, [article])
+  
   return (
-    <img
-      src={src}
-      srcSet={`${proxifyImageURL(src, 320)} 320w,
-              ${proxifyImageURL(src, 767)} 767w`}
-      sizes={mobileDisplay ? '100vw' : '320px'}
-      alt={alt}
-      onError={(e) => (e.currentTarget.style.display = 'none')}
+    <LazyImage
+      {...attrs}
+      thumbhash={article.thumbhash}
+      src={article.image}
+      // crossOrigin='anonymous'
     />
   )
 }

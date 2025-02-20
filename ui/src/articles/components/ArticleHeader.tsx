@@ -1,22 +1,18 @@
+import React, { FC, PropsWithChildren } from 'react'
 import { History } from 'history'
-import React, { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
-import Icon from '../../components/Icon'
-import TimeAgo from '../../components/TimeAgo'
+import { Icon, TimeAgo } from '../../components'
 import { getHostname } from '../../helpers'
 import { Article } from '../models'
 import styles from './ArticleHeader.module.css'
 
-interface Props {
+interface Props extends PropsWithChildren {
   article: Article
   to?: History.LocationDescriptor
-  children?: ReactNode
 }
 
-type AllProps = Props
-
-export default ({ article, to, children }: AllProps) => (
+export const ArticleHeader: FC<Props> = ({ article, to, children }) => (
   <header className={styles.header}>
     <h1>
       {article.category && <small>{article.category.title}</small>}
@@ -30,7 +26,7 @@ export default ({ article, to, children }: AllProps) => (
         )}
       </span>
       <small>
-        {article.url !== '' && (
+        {article.url && (
           <a href={article.url} target="_blank" rel="noopener noreferrer" title="Open original article">
             {getHostname(article.url)}
             <Icon name="open_in_new" />

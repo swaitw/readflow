@@ -4,6 +4,8 @@
   "pages": {
     "*": ["common"],
     "/": ["home"],
-    "/pricing": ["pricing"]
+    "/pricing": ["pricing"],
+    "/result": ["message"],
+    "/contact": ["contact"]
   }
 }
